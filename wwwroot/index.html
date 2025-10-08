@@ -16,14 +16,14 @@
             <option value="white">White</option>
             <option value="black">Black</option>
         </select>
-        <label>
-            Bot ELO:
-            <input id="elo" type="number" min="50" max="3000" step="50" value="1000" style="width:90px">
+        <label class="topbar-field">
+            Bot ELO
+            <input id="elo" type="number" min="50" max="3000" step="50" value="1000">
         </label>
         <button id="join">Join</button>
         <button id="join-bot">Play vs Bot</button>
         <button id="save-pgn">Download PGN</button>
-        <span id="turn">Turn: -</span>
+        <span id="turn" class="turn-pill">Turn: -</span>
     </div>
 
     <div class="layout">
@@ -33,22 +33,39 @@
             <div id="board" class="board"></div>
         </div>
         <div class="right">
-            <h3>Moves</h3>
-            <ol id="moves" class="moves"></ol>
-            <div id="analysis"></div>
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Moves</h3>
+                </div>
+                <ol id="moves" class="moves"></ol>
+            </section>
+            <section class="panel analysis-panel">
+                <div class="panel-header">
+                    <h3>Analysis</h3>
+                    <div class="analysis-controls">
+                        <label class="topbar-field">
+                            Depth
+                            <input id="depth" type="number" min="4" max="30" step="2" value="14">
+                        </label>
+                        <button id="local-analysis" class="ghost-button">Stockfish Eval</button>
+                    </div>
+                </div>
+                <div id="analysis" class="analysis-stream" aria-live="polite">
+                    <div class="analysis-placeholder">Run Stockfish to get a quick evaluation of the current position.</div>
+                </div>
+            </section>
         </div>
     </div>
 
     <!-- GameOver overlay -->
-    <div id="over" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6);
-       align-items:center; justify-content:center;">
-        <div style="background:#1e1e1e; padding:1rem 1.2rem; border-radius:.6rem; width:min(92vw,520px);">
-            <h2 id="over-title" style="margin-top:0">Game Over</h2>
+    <div id="over" class="overlay" role="dialog" aria-modal="true" aria-labelledby="over-title">
+        <div class="overlay-dialog">
+            <h2 id="over-title">Game Over</h2>
             <div id="over-body"></div>
-            <div style="margin-top:.75rem; display:flex; gap:.5rem; justify-content:flex-end">
-                <button id="over-ai">AI analysis</button>
+            <div class="overlay-actions">
+                <button id="over-ai" class="ghost-button">AI analysis</button>
                 <button id="over-rematch">Play again</button>
-                <button id="over-close">Close</button>
+                <button id="over-close" class="ghost-button">Close</button>
             </div>
         </div>
     </div>

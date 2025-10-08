@@ -1,8 +1,9 @@
 ﻿using ChessOnline;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,17 +29,30 @@ app.MapGet("/api/local/analyze", async (
     string roomId,
     int depth) =>
 {
-    depth = depth is > 4 and <= 30 ? depth : 14;
+    try
+    {
+        depth = depth is > 4 and <= 30 ? depth : 14;
 
-    var game = store.GetOrCreate(roomId);
-    var uci = game.ExportUciMoveList(); // метод в ChessGame.cs
+        var game = store.GetOrCreate(roomId);
+        var uci = game.ExportUciMoveList(); // метод в ChessGame.cs
 
-    var eval = await engine.AnalyzeAsync(uci, depth);
-    var text = eval.ScoreType == "mate"
-        ? $"Mate in {eval.Score}  |  best: {eval.BestMove}\nPV: {eval.Pv}"
-        : $"Eval {eval.Score / 100.0:+0.00;-0.00}  |  depth {eval.Depth}  |  best: {eval.BestMove}\nPV: {eval.Pv}";
+        var eval = await engine.AnalyzeAsync(uci, depth);
+        var text = eval.ScoreType == "mate"
+            ? $"Mate in {eval.Score}  |  best: {eval.BestMove}\nPV: {eval.Pv}"
+            : $"Eval {eval.Score / 100.0:+0.00;-0.00}  |  depth {eval.Depth}  |  best: {eval.BestMove}\nPV: {eval.Pv}";
 
-    return Results.Json(new { ok = true, text });
+        return Results.Json(new { ok = true, text });
+    }
+    catch (Exception ex)
+    {
+        var message = ex switch
+        {
+            FileNotFoundException or TimeoutException => ex.Message,
+            _ => "Local analysis failed to run. Check Stockfish installation."
+        };
+
+        return Results.Json(new { ok = false, error = message }, statusCode: StatusCodes.Status500InternalServerError);
+    }
 });
 
 app.Run();

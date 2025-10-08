@@ -23,7 +23,7 @@
         <button id="join">Join</button>
         <button id="join-bot">Play vs Bot</button>
         <button id="save-pgn">Download PGN</button>
-        <span id="turn" class="turn-pill">Turn: -</span>
+        <span id="turn" class="turn-pill">Am Zug: -</span>
     </div>
 
     <div class="layout">
@@ -51,6 +51,7 @@
                     </div>
                 </div>
                 <div id="analysis" class="analysis-stream" aria-live="polite">
+                    <div class="analysis-placeholder">Starte Stockfish, um die Stellung schnell bewerten zu lassen.</div>
                     <div class="analysis-placeholder">Run Stockfish to get a quick evaluation of the current position.</div>
                 </div>
             </section>
@@ -72,8 +73,7 @@
 
     <template id="cell-tpl">
         <div class="cell">
-            <img class="piece" />
-            <span class="label"></span>
+            <img class="piece" alt="" />
         </div>
     </template>
 

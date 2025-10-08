@@ -27,7 +27,10 @@ const resetAnalysis = () => {
     analysisEl.innerHTML = '';
     const placeholder = document.createElement('div');
     placeholder.className = 'analysis-placeholder';
-    placeholder.textContent = 'Run Stockfish to get a quick evaluation of the current position.';
+    placeholder.textContent = [
+        'Stockfish hilft dir nach deinem letzten Zug:',
+        'Starte eine Analyse, um sofort zu sehen, wie gut er war.'
+    ].join(' ');
     analysisEl.appendChild(placeholder);
 };
 
@@ -89,16 +92,19 @@ const pushAnalysisResult = ({ ok, summary, error, depth }) => {
         card.append(header, body, meta);
     } else if (summary) {
         if (summary.severity) card.classList.add(`is-${summary.severity}`);
+        card.dataset.severity = summary.severity ?? 'info';
+
         const header = document.createElement('div');
         header.className = 'analysis-headline';
 
         const mover = document.createElement('span');
         mover.className = `mover-badge ${String(summary.mover ?? 'info').toLowerCase()}`;
-        mover.textContent = summary.mover === 'none' ? 'Overview' : summary.mover;
+        mover.textContent = summary.mover === 'none' ? 'Übersicht' : `${summary.mover} zog`;
 
         const badge = document.createElement('span');
+        const judgement = summary.judgement ?? 'Analyse';
         badge.className = `judgement-badge ${summary.severity ?? 'info'}`;
-        badge.textContent = summary.judgement ?? 'Analysis';
+        badge.textContent = judgement;
         header.append(mover, badge);
 
         const body = document.createElement('div');
@@ -106,48 +112,44 @@ const pushAnalysisResult = ({ ok, summary, error, depth }) => {
 
         const played = document.createElement('div');
         played.className = 'analysis-line primary';
-        played.textContent = summary.mover === 'none' ? 'Current position' : `Played: ${summary.moveSan}`;
+        played.textContent = summary.mover === 'none'
+            ? 'Aktuelle Stellung'
+            : `Gesetzt wurde: ${summary.moveSan}`;
         body.appendChild(played);
+
+        const verdict = document.createElement('div');
+        verdict.className = 'analysis-comment verdict';
+        const swingVal = typeof summary.swing === 'number' ? summary.swing : null;
+        const swingText = swingVal === null ? '' : ` (${swingVal >= 0 ? '+' : ''}${swingVal} cp)`;
+        const commentText = summary.comment ? `: ${summary.comment}` : '';
+        verdict.textContent = summary.mover === 'none'
+            ? 'Noch kein Zug gespielt.'
+            : `${judgement}${swingText}${commentText}`;
+        body.appendChild(verdict);
 
         const evalLine = document.createElement('div');
         evalLine.className = 'analysis-line eval';
-        evalLine.textContent = `Eval: ${summary.evaluationBefore} → ${summary.evaluationAfter}`;
+        evalLine.textContent = `Bewertung: ${summary.evaluationBefore} → ${summary.evaluationAfter}`;
         body.appendChild(evalLine);
-
-        if (typeof summary.swing === 'number') {
-            const swingLine = document.createElement('div');
-            swingLine.className = 'analysis-line swing';
-            const swingVal = summary.swing;
-            const swingText = `${swingVal >= 0 ? '+' : ''}${swingVal} cp`;
-            swingLine.textContent = `Swing: ${swingText}`;
-            body.appendChild(swingLine);
-        }
-
-        if (summary.comment) {
-            const comment = document.createElement('div');
-            comment.className = 'analysis-comment';
-            comment.textContent = summary.comment;
-            body.appendChild(comment);
-        }
 
         if (summary.bestSan) {
             const best = document.createElement('div');
             best.className = 'analysis-line recommendation';
-            best.textContent = `Better move: ${summary.bestSan}`;
+            best.textContent = `Besser laut Engine: ${summary.bestSan}`;
             body.appendChild(best);
         }
 
         if (Array.isArray(summary.pvSan) && summary.pvSan.length > 0) {
             const pv = document.createElement('div');
             pv.className = 'analysis-line pv';
-            pv.textContent = `Line: ${summary.pvSan.join(' ')}`;
+            pv.textContent = `Empfohlene Variante: ${summary.pvSan.join(' ')}`;
             body.appendChild(pv);
         }
 
         const meta = document.createElement('div');
         meta.className = 'meta';
         const depthText = summary.depthUsed ?? depth;
-        meta.textContent = `Depth ${depthText} • ${new Date().toLocaleTimeString()}`;
+        meta.textContent = `Tiefe ${depthText} • ${new Date().toLocaleTimeString()}`;
 
         card.append(header, body, meta);
     }

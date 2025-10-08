@@ -12,12 +12,11 @@ body::before {
     content: "";
     position: fixed;
     inset: -20%;
-    background: radial-gradient(45% 45% at 15% 20%, rgba(59, 130, 246, 0.45), transparent 70%),
-        radial-gradient(55% 55% at 80% 10%, rgba(99, 102, 241, 0.55), transparent 75%),
-        radial-gradient(40% 40% at 50% 90%, rgba(16, 185, 129, 0.35), transparent 70%);
+    background: radial-gradient(45% 45% at 15% 20%, rgba(59, 130, 246, 0.35), transparent 70%),
+        radial-gradient(55% 55% at 80% 10%, rgba(99, 102, 241, 0.35), transparent 75%),
+        radial-gradient(40% 40% at 50% 90%, rgba(16, 185, 129, 0.25), transparent 70%);
     filter: blur(90px);
-    opacity: .55;
-    animation: glow-drift 18s ease-in-out infinite alternate;
+    opacity: .45;
     pointer-events: none;
     z-index: -1;
 }
@@ -169,12 +168,13 @@ button:disabled {
     gap: 1.4rem;
     padding: 1.5rem;
     align-items: flex-start;
-    max-width: 1400px;
+    justify-content: center;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
 .left {
-    flex: 1 1 480px;
+    flex: 1 1 520px;
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -374,15 +374,15 @@ button:disabled {
     color: rgba(226, 232, 240, 0.85);
 }
 
-.analysis-line.swing {
-    font-size: .82rem;
-    color: rgba(248, 250, 252, 0.75);
-}
-
 .analysis-comment {
     margin-top: .2rem;
     font-size: .9rem;
     color: rgba(226, 232, 240, 0.85);
+}
+
+.analysis-comment.verdict {
+    font-weight: 600;
+    color: rgba(248, 250, 252, 0.92);
 }
 
 .analysis-line.recommendation,
@@ -432,15 +432,17 @@ button:disabled {
 }
 
 .board {
-    width: min(78vmin, 600px);
+    width: min(72vmin, 560px);
     max-width: 100%;
     aspect-ratio: 1/1;
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    box-shadow: 0 18px 44px rgba(3, 7, 18, 0.55);
-    border-radius: .9rem;
+    border: 6px solid rgba(30, 41, 59, 0.55);
+    box-shadow: 0 18px 44px rgba(3, 7, 18, 0.45);
+    border-radius: .65rem;
     overflow: hidden;
-    background: rgba(15, 15, 15, 0.25);
+    background: #111827;
+    margin: 0 auto;
 }
 
 .cell {
@@ -451,11 +453,11 @@ button:disabled {
 }
 
 .cell.light {
-    background: linear-gradient(135deg, #f6f0dc, #e4cfa3);
+    background: #f6f0dc;
 }
 
 .cell.dark {
-    background: linear-gradient(135deg, #b99365, #8b5e3c);
+    background: #b58863;
 }
 
 .piece {
@@ -594,11 +596,6 @@ button:disabled {
 .overlay-ai-loading {
     color: rgba(226, 232, 240, 0.72);
     font-size: .9rem;
-}
-
-@keyframes glow-drift {
-    0% { transform: rotate(0deg) scale(1); }
-    100% { transform: rotate(8deg) scale(1.1); }
 }
 
 @keyframes shake {

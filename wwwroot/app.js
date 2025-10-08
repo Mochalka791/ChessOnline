@@ -277,6 +277,25 @@ function drawBoard(withAnim = true) {
 
     const turnLabel = state.turn === 'white' ? 'Weiß' : 'Schwarz';
     turnEl.textContent = `Am Zug: ${turnLabel}`;
+    if (withAnim && prev && state.lastMove) {
+        const { fx, fy, tx, ty } = state.lastMove;
+        const from = boardEl.children[indexOf(fx, fy)];
+        const to = boardEl.children[indexOf(tx, ty)];
+        if (from && to) {
+            const code = prev.board[fx][fy];
+            const ghost = document.createElement('img');
+            ghost.className = 'move-ghost';
+            const src = pieceSrc(code);
+            if (src) {
+                ghost.src = src; from.appendChild(ghost);
+                const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+                requestAnimationFrame(() => { ghost.style.transform = `translate(${b.left - a.left}px, ${b.top - a.top}px)`; });
+                setTimeout(() => ghost.remove(), 200);
+            }
+        }
+    }
+
+    turnEl.textContent = `Turn: ${state.turn}`;
     turnEl.dataset.side = state.turn;
     whiteBase = state.whiteMs; blackBase = state.blackMs; serverStamp = Date.now();
     if (clockTimer) clearInterval(clockTimer);
@@ -329,6 +348,7 @@ overlayAiBtn?.addEventListener('click', async () => {
     }
     container.classList.remove('error');
     container.innerHTML = '<div class="overlay-ai-loading">Fordere Cloud-Analyse an …</div>';
+    container.innerHTML = '<div class="overlay-ai-loading">Requesting cloud analysis…</div>';
     try {
         const res = await fetch('/api/ai/analyze', {
             method: 'POST',
@@ -343,11 +363,13 @@ overlayAiBtn?.addEventListener('click', async () => {
             const message = payload?.error ?? `HTTP ${res.status}`;
             container.classList.add('error');
             container.innerHTML = `<div>AI-Fehler: ${escapeHtml(message)}</div>`;
+            container.innerHTML = `<div>AI error: ${escapeHtml(message)}</div>`;
         }
     } catch (err) {
         container.classList.add('error');
         const message = err instanceof Error ? err.message : String(err);
         container.innerHTML = `<div>AI-Fehler: ${escapeHtml(message)}</div>`;
+        container.innerHTML = `<div>AI error: ${escapeHtml(message)}</div>`;
     } finally {
         overlayAiBtn.disabled = false;
     }
@@ -359,6 +381,7 @@ const runLocalAnalysis = async () => {
     if (depthInput) depthInput.value = depth;
     if (!roomId) {
         pushAnalysisResult({ ok: false, error: 'Bitte zuerst einem Raum beitreten.', depth });
+        pushAnalysisResult({ ok: false, error: 'Join a room first to analyze the current position.', depth });
         return;
     }
 
@@ -371,6 +394,7 @@ const runLocalAnalysis = async () => {
         try { payload = await res.json(); } catch { /* ignore */ }
         if (res.ok && payload?.ok) {
             outcome = { ok: true, summary: payload.summary ?? null, depth: payload.depth ?? depth };
+            outcome = { ok: true, text: payload.text };
         } else {
             const message = payload?.error ?? `HTTP ${res.status}`;
             outcome = { ok: false, error: message };
@@ -386,6 +410,7 @@ const runLocalAnalysis = async () => {
     if (outcome) {
         const effectiveDepth = outcome.depth ?? depth;
         pushAnalysisResult({ ...outcome, depth: effectiveDepth });
+        pushAnalysisResult({ ...outcome, depth });
     }
 };
 

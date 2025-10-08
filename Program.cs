@@ -95,6 +95,14 @@ app.MapGet("/api/local/analyze", async (
         };
 
         return Results.Json(new { ok = true, depth = summary.depthUsed, summary });
+        var uci = game.ExportUciMoveList(); // метод в ChessGame.cs
+
+        var eval = await engine.AnalyzeAsync(uci, depth);
+        var text = eval.ScoreType == "mate"
+            ? $"Mate in {eval.Score}  |  best: {eval.BestMove}\nPV: {eval.Pv}"
+            : $"Eval {eval.Score / 100.0:+0.00;-0.00}  |  depth {eval.Depth}  |  best: {eval.BestMove}\nPV: {eval.Pv}";
+
+        return Results.Json(new { ok = true, text });
     }
     catch (Exception ex)
     {
@@ -102,6 +110,7 @@ app.MapGet("/api/local/analyze", async (
         {
             FileNotFoundException or TimeoutException => ex.Message,
             _ => "Lokale Analyse konnte nicht gestartet werden. Bitte Stockfish-Installation prüfen."
+            _ => "Local analysis failed to run. Check Stockfish installation."
         };
 
         return Results.Json(new { ok = false, error = message }, statusCode: StatusCodes.Status500InternalServerError);

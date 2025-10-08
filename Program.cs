@@ -41,15 +41,15 @@ app.MapGet("/api/local/analyze", async (
             var summary = new
             {
                 mover = "none",
-                moveSan = "(no moves)",
+                moveSan = "(keine Züge)",
                 evaluationBefore = FormatEvalDisplay(eval, invertPerspective: false),
                 evaluationAfter = FormatEvalDisplay(eval, invertPerspective: false),
                 cpBefore = RoundCp(NormalizeEval(eval, invertPerspective: false)),
                 cpAfter = RoundCp(NormalizeEval(eval, invertPerspective: false)),
                 swing = 0,
-                judgement = "Overview",
+                judgement = "Überblick",
                 severity = "info",
-                comment = "The game has not started yet. Make a move to get feedback.",
+                comment = "Die Partie hat noch nicht begonnen. Spiele einen Zug, um Feedback zu erhalten.",
                 bestSan = string.Empty,
                 pvSan = Array.Empty<string>()
             };
@@ -65,7 +65,7 @@ app.MapGet("/api/local/analyze", async (
         var swing = cpAfter - cpBefore;
 
         var (label, severity, comment) = ClassifyMove(swing, afterEval);
-        var mover = ctx.Mover == PieceColor.White ? "White" : "Black";
+        var mover = ctx.Mover == PieceColor.White ? "Weiß" : "Schwarz";
 
         string bestSan = string.Empty;
         if (!string.IsNullOrWhiteSpace(beforeEval.BestMove) && beforeEval.BestMove != "(none)" &&
@@ -101,7 +101,7 @@ app.MapGet("/api/local/analyze", async (
         var message = ex switch
         {
             FileNotFoundException or TimeoutException => ex.Message,
-            _ => "Local analysis failed to run. Check Stockfish installation."
+            _ => "Lokale Analyse konnte nicht gestartet werden. Bitte Stockfish-Installation prüfen."
         };
 
         return Results.Json(new { ok = false, error = message }, statusCode: StatusCodes.Status500InternalServerError);
@@ -132,31 +132,30 @@ static string FormatEvalDisplay(StockfishEngine.EngineEval eval, bool invertPers
 
 static (string Label, string Severity, string Comment) ClassifyMove(double swing, StockfishEngine.EngineEval after)
 {
-    // Positive swing = mover improved their position.
     if (after.ScoreType == "mate")
     {
         if (after.Score > 0)
-            return ("Blunder", "blunder", $"Allows mate in {after.Score}.");
+            return ("Patzer", "blunder", $"Erlaubt Matt in {after.Score}.");
         if (after.Score < 0)
-            return ("Winning", "brilliant", $"Forces mate in {Math.Abs(after.Score)}.");
+            return ("Gewinnzug", "brilliant", $"Erzwingt Matt in {Math.Abs(after.Score)}.");
     }
 
     var roundedSwing = RoundCp(swing);
     if (roundedSwing >= 80)
-        return ("Brilliant", "brilliant", $"Improves the evaluation by {roundedSwing} cp.");
+        return ("Brillant", "brilliant", $"Verbessert die Stellung um {roundedSwing} Wertungspunkte.");
     if (roundedSwing >= 35)
-        return ("Great move", "good", $"Strengthens the position by {roundedSwing} cp.");
+        return ("Starker Zug", "good", $"Festigt die Stellung um {roundedSwing} Punkte.");
     if (roundedSwing >= 15)
-        return ("Good move", "good", $"Gains {roundedSwing} cp compared to the engine line.");
+        return ("Guter Zug", "good", $"Gewinnt {roundedSwing} Punkte gegenüber der Engine-Variante.");
 
     var loss = -roundedSwing;
     if (loss <= 10)
-        return ("Accurate", "accurate", "Keeps the evaluation stable.");
+        return ("Präzise", "accurate", "Hält die Bewertung stabil.");
     if (loss <= 60)
-        return ($"Inaccuracy", "inaccuracy", $"Concedes {loss} cp compared to the best move.");
+        return ($"Ungenau", "inaccuracy", $"Gibt {loss} Punkte gegenüber dem besten Zug ab.");
     if (loss <= 150)
-        return ($"Mistake", "mistake", $"Loses {loss} cp versus the engine choice.");
-    return ($"Blunder", "blunder", $"Drops the evaluation by {loss} cp.");
+        return ($"Fehler", "mistake", $"Verliert {loss} Punkte im Vergleich zur Engine.");
+    return ($"Patzer", "blunder", $"Verschlechtert die Stellung um {loss} Punkte.");
 }
 
 static int RoundCp(double value) => (int)Math.Round(value, MidpointRounding.AwayFromZero);

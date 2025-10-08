@@ -59,7 +59,7 @@ const showAnalysisLoading = (depth) => {
     spinner.className = 'spinner';
     const content = document.createElement('div');
     content.className = 'content';
-    content.innerHTML = `<strong>Stockfish is thinking…</strong><div class="meta">Depth ${depth}</div>`;
+    content.innerHTML = `<strong>Stockfish rechnet …</strong><div class="meta">Tiefe ${depth}</div>`;
     card.append(spinner, content);
     analysisEl.prepend(card);
     trimAnalysisCards();
@@ -78,12 +78,12 @@ const pushAnalysisResult = ({ ok, summary, error, depth }) => {
         header.className = 'analysis-headline';
         const badge = document.createElement('span');
         badge.className = 'judgement-badge error';
-        badge.textContent = 'Error';
+        badge.textContent = 'Fehler';
         header.append(badge);
 
         const body = document.createElement('div');
         body.className = 'analysis-body';
-        body.textContent = error ?? 'Unable to analyze the position.';
+        body.textContent = error ?? 'Analyse konnte nicht durchgeführt werden.';
 
         const meta = document.createElement('div');
         meta.className = 'meta';
@@ -98,7 +98,10 @@ const pushAnalysisResult = ({ ok, summary, error, depth }) => {
         header.className = 'analysis-headline';
 
         const mover = document.createElement('span');
-        mover.className = `mover-badge ${String(summary.mover ?? 'info').toLowerCase()}`;
+        const moverClass = summary.mover === 'Weiß' ? 'white'
+            : summary.mover === 'Schwarz' ? 'black'
+            : 'none';
+        mover.className = `mover-badge ${moverClass}`;
         mover.textContent = summary.mover === 'none' ? 'Übersicht' : `${summary.mover} zog`;
 
         const badge = document.createElement('span');
@@ -120,7 +123,7 @@ const pushAnalysisResult = ({ ok, summary, error, depth }) => {
         const verdict = document.createElement('div');
         verdict.className = 'analysis-comment verdict';
         const swingVal = typeof summary.swing === 'number' ? summary.swing : null;
-        const swingText = swingVal === null ? '' : ` (${swingVal >= 0 ? '+' : ''}${swingVal} cp)`;
+        const swingText = swingVal === null ? '' : ` (${swingVal >= 0 ? '+' : ''}${swingVal} Punkte)`;
         const commentText = summary.comment ? `: ${summary.comment}` : '';
         verdict.textContent = summary.mover === 'none'
             ? 'Noch kein Zug gespielt.'
@@ -135,14 +138,14 @@ const pushAnalysisResult = ({ ok, summary, error, depth }) => {
         if (summary.bestSan) {
             const best = document.createElement('div');
             best.className = 'analysis-line recommendation';
-            best.textContent = `Besser laut Engine: ${summary.bestSan}`;
+            best.textContent = `Engine-Empfehlung: ${summary.bestSan}`;
             body.appendChild(best);
         }
 
         if (Array.isArray(summary.pvSan) && summary.pvSan.length > 0) {
             const pv = document.createElement('div');
             pv.className = 'analysis-line pv';
-            pv.textContent = `Empfohlene Variante: ${summary.pvSan.join(' ')}`;
+            pv.textContent = `Variante: ${summary.pvSan.join(' ')}`;
             body.appendChild(pv);
         }
 
@@ -192,7 +195,9 @@ const ensureConnected = async () => { if (conn.state === "Disconnected") await c
 const indexOf = (x, y) => y * 8 + x;
 const shake = (x, y) => {
     const cell = boardEl.children[indexOf(x, y)];
-    if (!cell) return; cell.classList.add('shake'); setTimeout(() => cell.classList.remove('shake'), 300);
+    if (!cell) return;
+    cell.classList.add('invalid');
+    setTimeout(() => cell.classList.remove('invalid'), 500);
 };
 
 const canDrag = (code) => {
@@ -214,7 +219,7 @@ function drawClocks() {
         const m = Math.floor(s / 60), ss = String(s % 60).padStart(2, '0');
         return `${m}:${ss}`;
     };
-    clocksEl.textContent = `White ${fmt(w)}  |  Black ${fmt(b)}`;
+    clocksEl.textContent = `Weiß ${fmt(w)}  |  Schwarz ${fmt(b)}`;
 }
 
 function drawBoard(withAnim = true) {
@@ -270,25 +275,8 @@ function drawBoard(withAnim = true) {
         }
     }
 
-    if (withAnim && prev && state.lastMove) {
-        const { fx, fy, tx, ty } = state.lastMove;
-        const from = boardEl.children[indexOf(fx, fy)];
-        const to = boardEl.children[indexOf(tx, ty)];
-        if (from && to) {
-            const code = prev.board[fx][fy];
-            const ghost = document.createElement('img');
-            ghost.className = 'move-ghost';
-            const src = pieceSrc(code);
-            if (src) {
-                ghost.src = src; from.appendChild(ghost);
-                const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
-                requestAnimationFrame(() => { ghost.style.transform = `translate(${b.left - a.left}px, ${b.top - a.top}px)`; });
-                setTimeout(() => ghost.remove(), 200);
-            }
-        }
-    }
-
-    turnEl.textContent = `Turn: ${state.turn}`;
+    const turnLabel = state.turn === 'white' ? 'Weiß' : 'Schwarz';
+    turnEl.textContent = `Am Zug: ${turnLabel}`;
     turnEl.dataset.side = state.turn;
     whiteBase = state.whiteMs; blackBase = state.blackMs; serverStamp = Date.now();
     if (clockTimer) clearInterval(clockTimer);
@@ -305,7 +293,7 @@ conn.on("Init", (st, seat) => {
 });
 conn.on("State", (st) => { prev = state; state = st; drawBoard(true); });
 conn.on("History", (items) => { movesEl.innerHTML = ""; for (const it of items) { const li = document.createElement('li'); li.textContent = it; movesEl.appendChild(li); } });
-conn.on("Players", (p) => { playersEl.textContent = `White: ${p.white} | Black: ${p.black}`; });
+conn.on("Players", (p) => { playersEl.textContent = `Weiß: ${p.white} | Schwarz: ${p.black}`; });
 conn.on("MoveResult", (ok, err) => { if (!ok && lastAttempt) { shake(lastAttempt.fx, lastAttempt.fy); } });
 conn.on("GameOver", (msg, analysis) => {
     if (!overlayEl || !overlayBody || !overlayTitle) return;
@@ -340,7 +328,7 @@ overlayAiBtn?.addEventListener('click', async () => {
         overlayBody.appendChild(container);
     }
     container.classList.remove('error');
-    container.innerHTML = '<div class="overlay-ai-loading">Requesting cloud analysis…</div>';
+    container.innerHTML = '<div class="overlay-ai-loading">Fordere Cloud-Analyse an …</div>';
     try {
         const res = await fetch('/api/ai/analyze', {
             method: 'POST',
@@ -354,12 +342,12 @@ overlayAiBtn?.addEventListener('click', async () => {
         } else {
             const message = payload?.error ?? `HTTP ${res.status}`;
             container.classList.add('error');
-            container.innerHTML = `<div>AI error: ${escapeHtml(message)}</div>`;
+            container.innerHTML = `<div>AI-Fehler: ${escapeHtml(message)}</div>`;
         }
     } catch (err) {
         container.classList.add('error');
         const message = err instanceof Error ? err.message : String(err);
-        container.innerHTML = `<div>AI error: ${escapeHtml(message)}</div>`;
+        container.innerHTML = `<div>AI-Fehler: ${escapeHtml(message)}</div>`;
     } finally {
         overlayAiBtn.disabled = false;
     }
@@ -370,7 +358,7 @@ const runLocalAnalysis = async () => {
     const depth = clampDepth(depthInput?.value ?? 14);
     if (depthInput) depthInput.value = depth;
     if (!roomId) {
-        pushAnalysisResult({ ok: false, error: 'Join a room first to analyze the current position.', depth });
+        pushAnalysisResult({ ok: false, error: 'Bitte zuerst einem Raum beitreten.', depth });
         return;
     }
 

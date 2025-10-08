@@ -1,24 +1,10 @@
 body {
     font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-    background: #05070f;
-    color: #f1f5f9;
+    background: #0f172a;
+    color: #e2e8f0;
     margin: 0;
     min-height: 100vh;
-    position: relative;
     overflow-x: hidden;
-}
-
-body::before {
-    content: "";
-    position: fixed;
-    inset: -20%;
-    background: radial-gradient(45% 45% at 15% 20%, rgba(59, 130, 246, 0.35), transparent 70%),
-        radial-gradient(55% 55% at 80% 10%, rgba(99, 102, 241, 0.35), transparent 75%),
-        radial-gradient(40% 40% at 50% 90%, rgba(16, 185, 129, 0.25), transparent 70%);
-    filter: blur(90px);
-    opacity: .45;
-    pointer-events: none;
-    z-index: -1;
 }
 
 .topbar {
@@ -27,21 +13,20 @@ body::before {
     flex-wrap: wrap;
     gap: .65rem;
     padding: .85rem 1.2rem;
-    background: rgba(12, 19, 33, 0.82);
-    backdrop-filter: blur(18px);
-    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    background: #111c33;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
     position: sticky;
     top: 0;
     z-index: 10;
-    box-shadow: 0 10px 30px rgba(2, 12, 32, 0.45);
+    box-shadow: 0 10px 24px rgba(2, 8, 20, 0.4);
 }
 
 .topbar input,
 .topbar select,
 .analysis-controls input {
-    background: rgba(15, 23, 42, 0.7);
-    color: #e2e8f0;
-    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(15, 23, 42, 0.8);
+    color: inherit;
+    border: 1px solid rgba(148, 163, 184, 0.4);
     padding: .45rem .7rem;
     border-radius: .55rem;
     transition: border-color .18s ease, box-shadow .18s ease, background-color .2s ease;
@@ -76,68 +61,61 @@ body::before {
 
 button {
     font: inherit;
-    background: linear-gradient(135deg, #38bdf8, #6366f1);
+    background: #2563eb;
     color: #f8fafc;
     border: 0;
     padding: .5rem 1rem;
-    border-radius: .65rem;
+    border-radius: .55rem;
     cursor: pointer;
-    transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
-    box-shadow: 0 12px 30px rgba(56, 189, 248, 0.28);
+    transition: filter .2s ease;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.25);
     font-weight: 600;
 }
 
 button:hover {
-    transform: translateY(-1px) scale(1.01);
-    box-shadow: 0 16px 38px rgba(56, 189, 248, 0.34);
+    filter: brightness(1.05);
 }
 
 button:active {
-    transform: translateY(0) scale(.98);
+    filter: brightness(0.95);
 }
 
 button:disabled {
-    opacity: .55;
+    opacity: .6;
     cursor: not-allowed;
     box-shadow: none;
-    transform: none;
 }
 
 .ghost-button {
-    background: rgba(15, 23, 42, 0.35);
-    border: 1px solid rgba(148, 163, 184, 0.35);
-    color: #e0f2fe;
+    background: transparent;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    color: #e2e8f0;
     box-shadow: none;
 }
 
 .ghost-button:hover {
-    background: rgba(59, 130, 246, 0.16);
-    border-color: rgba(96, 165, 250, 0.6);
-}
-
-.ghost-button:active {
-    transform: translateY(0) scale(.98);
+    background: rgba(148, 163, 184, 0.15);
 }
 
 .turn-pill {
     margin-left: auto;
     padding: .35rem .8rem;
     border-radius: 999px;
-    background: rgba(34, 197, 94, 0.18);
-    border: 1px solid rgba(34, 197, 94, 0.35);
+    background: rgba(59, 130, 246, 0.18);
+    border: 1px solid rgba(59, 130, 246, 0.4);
     font-weight: 600;
     letter-spacing: .02em;
 }
 
 .turn-pill[data-side="white"] {
-    background: rgba(226, 232, 240, 0.22);
-    border-color: rgba(148, 163, 184, 0.4);
-    color: #1f2937;
+    background: rgba(226, 232, 240, 0.18);
+    border-color: rgba(226, 232, 240, 0.32);
+    color: #0f172a;
 }
 
 .turn-pill[data-side="black"] {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(30, 64, 175, 0.3);
+    border-color: rgba(30, 64, 175, 0.5);
 }
 
 #players,
@@ -147,17 +125,16 @@ button:disabled {
 
 #players {
     padding: .5rem .75rem;
-    opacity: .9;
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(15, 23, 42, 0.7);
     border-radius: .75rem;
-    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
     text-align: center;
 }
 
 #clocks {
     padding: .2rem .75rem;
     font-weight: 600;
-    background: rgba(15, 23, 42, 0.45);
+    background: rgba(15, 23, 42, 0.55);
     border-radius: .6rem;
     text-align: center;
 }
@@ -190,12 +167,11 @@ button:disabled {
 }
 
 .panel {
-    background: rgba(12, 19, 33, 0.74);
+    background: rgba(15, 23, 42, 0.82);
     border-radius: 1rem;
     padding: 1rem 1.2rem;
-    box-shadow: 0 14px 36px rgba(2, 6, 23, 0.45);
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    backdrop-filter: blur(16px);
+    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.45);
+    border: 1px solid rgba(148, 163, 184, 0.22);
     display: flex;
     flex-direction: column;
     gap: .75rem;
@@ -432,13 +408,13 @@ button:disabled {
 }
 
 .board {
-    width: min(72vmin, 560px);
+    width: min(70vmin, 540px);
     max-width: 100%;
     aspect-ratio: 1/1;
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    border: 6px solid rgba(30, 41, 59, 0.55);
-    box-shadow: 0 18px 44px rgba(3, 7, 18, 0.45);
+    border: 6px solid #1f2937;
+    box-shadow: 0 16px 40px rgba(3, 7, 18, 0.45);
     border-radius: .65rem;
     overflow: hidden;
     background: #111827;
@@ -474,35 +450,25 @@ button:disabled {
 }
 
 .cell.drag-over {
-    outline: 3px solid #39f;
+    outline: 3px solid #3b82f6;
     outline-offset: -3px;
 }
 
 .cell.last-from {
-    box-shadow: inset 0 0 0 4px rgba(0,150,255,.65);
+    box-shadow: inset 0 0 0 4px rgba(59, 130, 246, 0.55);
 }
 
 .cell.last-to {
-    box-shadow: inset 0 0 0 4px rgba(0,255,150,.65);
+    box-shadow: inset 0 0 0 4px rgba(16, 185, 129, 0.6);
 }
 
 .cell.check {
-    outline: 4px solid #f33;
+    outline: 4px solid #f87171;
     outline-offset: -4px;
 }
 
-.move-ghost {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    user-select: none;
-    transition: transform .2s ease;
-    will-change: transform;
-    z-index: 5;
-}
-
-.cell.shake {
-    animation: shake .25s;
+.cell.invalid {
+    box-shadow: inset 0 0 0 4px rgba(248, 113, 113, 0.9);
 }
 
 .overlay {
@@ -596,28 +562,6 @@ button:disabled {
 .overlay-ai-loading {
     color: rgba(226, 232, 240, 0.72);
     font-size: .9rem;
-}
-
-@keyframes shake {
-    0% {
-        transform: translateX(0);
-    }
-
-    25% {
-        transform: translateX(-6px);
-    }
-
-    50% {
-        transform: translateX(6px);
-    }
-
-    75% {
-        transform: translateX(-4px);
-    }
-
-    100% {
-        transform: translateX(0);
-    }
 }
 
 @keyframes pop-in {

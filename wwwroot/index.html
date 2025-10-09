@@ -53,6 +53,45 @@
                     <p>Staple Tetrominos mit smoothen Animationen und Soundeffekten.</p>
                     <button class="cta" disabled>Nicht verfügbar</button>
                 </article>
+        </div>
+    </div>
+
+    <main id="app" class="app" data-view="lobby">
+        <section id="lobby-view" class="view lobby-view" aria-label="Spielauswahl">
+            <header class="lobby-hero">
+                <div>
+                    <p class="eyebrow">Arcade</p>
+                    <h1>Wähle dein Spiel</h1>
+                    <p class="subline">Sammle Klassiker wie Snake oder Tetris – starte mit unseren Schachpartien gegen Freunde oder den Bot.</p>
+                </div>
+                <button id="open-chess" class="cta primary">Jetzt Schach spielen</button>
+            </header>
+
+            <div class="game-grid" role="list">
+                <article class="game-card" role="listitem">
+                    <header>
+                        <h2>Schach</h2>
+                        <span class="badge live">Verfügbar</span>
+                    </header>
+                    <p>Analysiere Partien, spiele online oder fordere den Stockfish-Bot heraus.</p>
+                    <button class="cta secondary" data-game="chess">Öffnen</button>
+                </article>
+                <article class="game-card disabled" role="listitem" aria-disabled="true">
+                    <header>
+                        <h2>Snake</h2>
+                        <span class="badge soon">Bald</span>
+                    </header>
+                    <p>Füttere die Schlange und knacke den Highscore – Update folgt.</p>
+                    <button class="cta" disabled>Nicht verfügbar</button>
+                </article>
+                <article class="game-card disabled" role="listitem" aria-disabled="true">
+                    <header>
+                        <h2>Tetris</h2>
+                        <span class="badge soon">Bald</span>
+                    </header>
+                    <p>Staple Tetrominos mit smoothen Animationen und Soundeffekten.</p>
+                    <button class="cta" disabled>Nicht verfügbar</button>
+                </article>
     <div class="topbar">
         <input id="room" placeholder="room-id" value="testroom" />
         <input id="name" placeholder="your name" value="Player" />

@@ -105,6 +105,35 @@ app.MapGet("/api/local/analyze", async (
         };
 
         return Results.Json(new { ok = true, depth = summary.depthUsed, summary });
+    }
+    catch (Exception ex)
+    {
+        var message = ex switch
+        {
+            FileNotFoundException or TimeoutException => ex.Message,
+            _ => "Lokale Analyse konnte nicht gestartet werden. Bitte Stockfish-Installation prüfen."
+        };
+
+
+        var summary = new
+        {
+            mover,
+            moveSan = ctx.LastMove.Notation,
+            evaluationBefore = FormatEvalDisplay(beforeEval, invertPerspective: false),
+            evaluationAfter = FormatEvalDisplay(afterEval, invertPerspective: true),
+            cpBefore = RoundCp(cpBefore),
+            cpAfter = RoundCp(cpAfter),
+            swing = RoundCp(swing),
+            judgement = label,
+            severity,
+            comment,
+            bestSan,
+            bestUci = beforeEval.BestMove,
+            pvSan,
+            depthUsed = Math.Min(beforeEval.Depth, afterEval.Depth)
+        };
+
+        return Results.Json(new { ok = true, depth = summary.depthUsed, summary });
         else
         {
             var beforeEval = await engine.AnalyzeAsync(ctx.UciBefore, depth);

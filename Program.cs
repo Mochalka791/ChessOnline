@@ -5,24 +5,26 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Threading;
+using System;            // optional
+using System.IO;         // für FileNotFoundException (falls nicht via Implicit Usings)
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Сервисы
+// Services
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IGameStore, InMemoryGameStore>();
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<StockfishEngine>(); // локальный движок Stockfish
+builder.Services.AddSingleton<StockfishEngine>(); // lokaler Stockfish
 
 var app = builder.Build();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// SignalR-хаб
+// SignalR-Hub
 app.MapHub<ChessHub>("/chess");
 
-// ===== ЛОКАЛЬНЫЙ БЕСПЛАТНЫЙ АНАЛИЗ (Stockfish) =====
+// ===== LOKALER KOSTENLOSER ANALYSE-ENDPOINT (Stockfish) =====
 // GET /api/local/analyze?roomId=testroom&depth=14
 app.MapGet("/api/local/analyze", async (
     IGameStore store,
@@ -37,12 +39,15 @@ app.MapGet("/api/local/analyze", async (
             return Results.Json(new { ok = false, error = "roomId fehlt." }, statusCode: StatusCodes.Status400BadRequest);
 
         var targetDepth = depth is > 4 and <= 30 ? depth.Value : 14;
+        depth = depth is > 4 and <= 30 ? depth : 14;
 
         var game = store.GetOrCreate(roomId);
 
         if (!game.TryGetLastMoveAnalysisContext(out var ctx))
         {
             var eval = await engine.AnalyzeAsync(game.ExportUciMoveList(), targetDepth, cancellationToken);
+            var eval = await engine.AnalyzeAsync(game.ExportUciMoveList(), depth);
+
             var summary = new
             {
                 mover = "none",
@@ -100,6 +105,48 @@ app.MapGet("/api/local/analyze", async (
         };
 
         return Results.Json(new { ok = true, depth = summary.depthUsed, summary });
+        else
+        {
+            var beforeEval = await engine.AnalyzeAsync(ctx.UciBefore, depth);
+            var afterEval = await engine.AnalyzeAsync(ctx.UciAfter, depth);
+
+            var cpBefore = NormalizeEval(beforeEval, invertPerspective: false);
+            var cpAfter = NormalizeEval(afterEval, invertPerspective: true);
+            var swing = cpAfter - cpBefore;
+
+            var (label, severity, comment) = ClassifyMove(swing, afterEval);
+            var mover = ctx.Mover == PieceColor.White ? "Weiß" : "Schwarz";
+
+            string bestSan = string.Empty;
+            if (!string.IsNullOrWhiteSpace(beforeEval.BestMove) &&
+                !string.Equals(beforeEval.BestMove, "(none)", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(beforeEval.BestMove, ctx.LastMoveUci, StringComparison.OrdinalIgnoreCase))
+            {
+                bestSan = game.ToSan(ctx.PositionBefore, beforeEval.BestMove);
+            }
+
+            var pvSan = game.ConvertPvToSan(ctx.PositionBefore, beforeEval.Pv, 6);
+
+            var summary = new
+            {
+                mover,
+                moveSan = ctx.LastMove.Notation,
+                evaluationBefore = FormatEvalDisplay(beforeEval, invertPerspective: false),
+                evaluationAfter = FormatEvalDisplay(afterEval, invertPerspective: true),
+                cpBefore = RoundCp(cpBefore),
+                cpAfter = RoundCp(cpAfter),
+                swing = RoundCp(swing),
+                judgement = label,
+                severity,
+                comment,
+                bestSan,
+                bestUci = beforeEval.BestMove,
+                pvSan,
+                depthUsed = Math.Min(beforeEval.Depth, afterEval.Depth)
+            };
+
+            return Results.Json(new { ok = true, depth = summary.depthUsed, summary });
+        }
     }
     catch (Exception ex)
     {
@@ -107,6 +154,7 @@ app.MapGet("/api/local/analyze", async (
         {
             FileNotFoundException or TimeoutException => ex.Message,
             _ => "Lokale Analyse konnte nicht gestartet werden. Bitte Stockfish-Installation prüfen."
+            _ => "Local analysis failed to run. Check Stockfish installation."
         };
 
         return Results.Json(new { ok = false, error = message }, statusCode: StatusCodes.Status500InternalServerError);
@@ -117,6 +165,8 @@ static double NormalizeEval(StockfishEngine.EngineEval eval, bool invertPerspect
 {
     double value = eval.ScoreType == "mate"
         ? (eval.Score > 0 ? 100_000 - Math.Min(Math.Abs(eval.Score), 50) * 1_000 : -100_000 + Math.Min(Math.Abs(eval.Score), 50) * 1_000)
+        ? (eval.Score > 0 ? 100_000 - Math.Min(Math.Abs(eval.Score), 50) * 1_000
+                          : -100_000 + Math.Min(Math.Abs(eval.Score), 50) * 1_000)
         : eval.Score;
     return invertPerspective ? -value : value;
 }
@@ -161,6 +211,10 @@ static (string Label, string Severity, string Comment) ClassifyMove(double swing
     if (loss <= 150)
         return ($"Fehler", "mistake", $"Verliert {loss} Punkte im Vergleich zur Engine.");
     return ($"Patzer", "blunder", $"Verschlechtert die Stellung um {loss} Punkte.");
+        return ("Ungenau", "inaccuracy", $"Gibt {loss} Punkte gegenüber dem besten Zug ab.");
+    if (loss <= 150)
+        return ("Fehler", "mistake", $"Verliert {loss} Punkte im Vergleich zur Engine.");
+    return ("Patzer", "blunder", $"Verschlechtert die Stellung um {loss} Punkte.");
 }
 
 static int RoundCp(double value) => (int)Math.Round(value, MidpointRounding.AwayFromZero);

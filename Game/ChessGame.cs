@@ -134,17 +134,85 @@ public sealed class ChessGame
         };
     }
 
-    public string[] ExportHistory() => _history.Select((m, i) =>
+    public IReadOnlyList<object> ExportHistory()
     {
-        int n = i / 2 + 1;
-        return (i % 2 == 0) ? $"{n}. {m.Notation}" : $"{n}... {m.Notation}";
-    }).ToArray();
+        var list = new List<object>();
+        var board = new Board();
+        var uciMoves = BuildUciMoves(_history.Count);
+
+        list.Add(new
+        {
+            ply = 0,
+            moveNumber = 0,
+            side = "none",
+            san = "Startstellung",
+            uci = string.Empty,
+            eval = 0,
+            fen = board.ToFen()
+        });
+
+        for (int i = 0; i < _history.Count; i++)
+        {
+            var rec = _history[i];
+            var uci = uciMoves[i];
+            ApplyUci(board, uci);
+
+            list.Add(new
+            {
+                ply = i + 1,
+                moveNumber = i / 2 + 1,
+                side = (i % 2 == 0) ? "white" : "black",
+                san = rec.Notation,
+                uci,
+                eval = rec.EvalAfterCp,
+                fen = board.ToFen()
+            });
+        }
+
+        return list;
+    }
 
     public object ExportPlayers() => new
     {
         white = _whiteName,
         black = _botIsBlack ? $"BOT ({_botElo})" : _blackName
     };
+
+    public string ExportCurrentFen() => _board.ToFen();
+
+    public IReadOnlyList<object> GetLegalMoves(int fx, int fy)
+    {
+        if (!_board.InBounds(fx, fy)) return Array.Empty<object>();
+
+        var piece = _board.Cells[fx, fy];
+        if (piece.IsEmpty || piece.Color != _board.Turn)
+            return Array.Empty<object>();
+
+        var moves = new List<object>();
+        foreach (var (sx, sy, tx, ty) in _board.AllLegalMoves(_board.Turn))
+        {
+            if (sx != fx || sy != fy) continue;
+            var target = _board.Cells[tx, ty];
+            bool isCapture = !target.IsEmpty;
+            if (!isCapture && piece.Type == PieceType.Pawn && tx != fx)
+            {
+                if (_board.EnPassant is { } ep && ep.x == tx && ep.y == ty)
+                    isCapture = true;
+            }
+            bool isPromotion = piece.Type == PieceType.Pawn && (ty == 0 || ty == 7);
+            bool isCastle = piece.Type == PieceType.King && Math.Abs(tx - fx) == 2;
+            moves.Add(new
+            {
+                tx,
+                ty,
+                capture = isCapture,
+                promotion = isPromotion,
+                castle = isCastle
+            });
+        }
+
+        return moves;
+    }
 
     private static readonly Dictionary<PieceType, int> Val = new()
     {

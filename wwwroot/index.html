@@ -20,6 +20,130 @@
     <noscript>
         <div class="noscript-warning">
             Bitte aktiviere JavaScript, um die Arcade nutzen zu können.
+    </div>
+
+    <main id="app" class="app" data-view="lobby">
+        <section id="lobby-view" class="view lobby-view" aria-label="Spielauswahl">
+            <header class="lobby-hero">
+                <div>
+                    <p class="eyebrow">Arcade</p>
+                    <h1>Wähle dein Spiel</h1>
+                    <p class="subline">Sammle Klassiker wie Snake oder Tetris – starte mit unseren Schachpartien gegen Freunde oder den Bot.</p>
+                </div>
+                <button id="open-chess" class="cta primary">Jetzt Schach spielen</button>
+            </header>
+
+            <div class="game-grid" role="list">
+                <article class="game-card" role="listitem">
+                    <header>
+                        <h2>Schach</h2>
+                        <span class="badge live">Verfügbar</span>
+                    </header>
+                    <p>Analysiere Partien, spiele online oder fordere den Stockfish-Bot heraus.</p>
+                    <button class="cta secondary" data-game="chess">Öffnen</button>
+                </article>
+                <article class="game-card disabled" role="listitem" aria-disabled="true">
+                    <header>
+                        <h2>Snake</h2>
+                        <span class="badge soon">Bald</span>
+                    </header>
+                    <p>Füttere die Schlange und knacke den Highscore – Update folgt.</p>
+                    <button class="cta" disabled>Nicht verfügbar</button>
+                </article>
+                <article class="game-card disabled" role="listitem" aria-disabled="true">
+                    <header>
+                        <h2>Tetris</h2>
+                        <span class="badge soon">Bald</span>
+                    </header>
+                    <p>Staple Tetrominos mit smoothen Animationen und Soundeffekten.</p>
+                    <button class="cta" disabled>Nicht verfügbar</button>
+                </article>
+        </div>
+    </div>
+
+    <main id="app" class="app" data-view="lobby">
+        <section id="lobby-view" class="view lobby-view" aria-label="Spielauswahl">
+            <header class="lobby-hero">
+                <div>
+                    <p class="eyebrow">Arcade</p>
+                    <h1>Wähle dein Spiel</h1>
+                    <p class="subline">Sammle Klassiker wie Snake oder Tetris – starte mit unseren Schachpartien gegen Freunde oder den Bot.</p>
+                </div>
+                <button id="open-chess" class="cta primary">Jetzt Schach spielen</button>
+            </header>
+
+            <div class="game-grid" role="list">
+                <article class="game-card" role="listitem">
+                    <header>
+                        <h2>Schach</h2>
+                        <span class="badge live">Verfügbar</span>
+                    </header>
+                    <p>Analysiere Partien, spiele online oder fordere den Stockfish-Bot heraus.</p>
+                    <button class="cta secondary" data-game="chess">Öffnen</button>
+                </article>
+                <article class="game-card disabled" role="listitem" aria-disabled="true">
+                    <header>
+                        <h2>Snake</h2>
+                        <span class="badge soon">Bald</span>
+                    </header>
+                    <p>Füttere die Schlange und knacke den Highscore – Update folgt.</p>
+                    <button class="cta" disabled>Nicht verfügbar</button>
+                </article>
+                <article class="game-card disabled" role="listitem" aria-disabled="true">
+                    <header>
+                        <h2>Tetris</h2>
+                        <span class="badge soon">Bald</span>
+                    </header>
+                    <p>Staple Tetrominos mit smoothen Animationen und Soundeffekten.</p>
+                    <button class="cta" disabled>Nicht verfügbar</button>
+                </article>
+    <div class="topbar">
+        <input id="room" placeholder="room-id" value="testroom" />
+        <input id="name" placeholder="your name" value="Player" />
+        <select id="side">
+            <option value="auto">Auto</option>
+            <option value="white">White</option>
+            <option value="black">Black</option>
+        </select>
+        <label class="topbar-field">
+            Bot ELO
+            <input id="elo" type="number" min="50" max="3000" step="50" value="1000">
+        </label>
+        <button id="join">Join</button>
+        <button id="join-bot">Play vs Bot</button>
+        <button id="save-pgn">Download PGN</button>
+        <span id="turn" class="turn-pill">Am Zug: -</span>
+    </div>
+
+    <div class="layout">
+        <div class="left">
+            <div id="players"></div>
+            <div id="clocks"></div>
+            <div id="board" class="board"></div>
+        </div>
+        <div class="right">
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>Moves</h3>
+                </div>
+                <ol id="moves" class="moves"></ol>
+            </section>
+            <section class="panel analysis-panel">
+                <div class="panel-header">
+                    <h3>Analysis</h3>
+                    <div class="analysis-controls">
+                        <label class="topbar-field">
+                            Depth
+                            <input id="depth" type="number" min="4" max="30" step="2" value="14">
+                        </label>
+                        <button id="local-analysis" class="ghost-button">Stockfish Eval</button>
+                    </div>
+                </div>
+                <div id="analysis" class="analysis-stream" aria-live="polite">
+                    <div class="analysis-placeholder">Starte Stockfish, um die Stellung schnell bewerten zu lassen.</div>
+                    <div class="analysis-placeholder">Run Stockfish to get a quick evaluation of the current position.</div>
+                </div>
+            </section>
         </div>
     </noscript>
 
@@ -59,6 +183,15 @@
                     <p>Staple Tetrominos mit smoothen Animationen und Soundeffekten.</p>
                     <button class="cta" disabled>Nicht verfügbar</button>
                 </article>
+    <!-- GameOver overlay -->
+    <div id="over" class="overlay" role="dialog" aria-modal="true" aria-labelledby="over-title">
+        <div class="overlay-dialog">
+            <h2 id="over-title">Game Over</h2>
+            <div id="over-body"></div>
+            <div class="overlay-actions">
+                <button id="over-ai" class="ghost-button">AI analysis</button>
+                <button id="over-rematch">Play again</button>
+                <button id="over-close" class="ghost-button">Close</button>
             </div>
         </section>
 
@@ -183,6 +316,8 @@
         <div class="cell" role="gridcell" tabindex="-1">
             <img class="piece" alt="" draggable="false" />
             <div class="dot" aria-hidden="true"></div>
+        <div class="cell">
+            <img class="piece" alt="" />
         </div>
     </template>
 </body>

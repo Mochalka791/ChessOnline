@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ChessOnline;
@@ -59,6 +60,18 @@ public class ChessHub(IGameStore store) : Hub
     {
         var game = store.GetOrCreate(roomId);
         return Task.FromResult(game.ExportPgn());
+    }
+
+    public Task<string> GetFen(string roomId)
+    {
+        var game = store.GetOrCreate(roomId);
+        return Task.FromResult(game.ExportCurrentFen());
+    }
+
+    public Task<IReadOnlyList<object>> GetLegalMoves(string roomId, int fx, int fy)
+    {
+        var game = store.GetOrCreate(roomId);
+        return Task.FromResult(game.GetLegalMoves(fx, fy));
     }
 
     public override async Task OnDisconnectedAsync(Exception? ex)

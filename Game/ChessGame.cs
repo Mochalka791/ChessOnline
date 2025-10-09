@@ -24,7 +24,7 @@ public sealed class ChessGame
     private string _whiteName = "White";
     private string _blackName = "Black";
 
-    private bool _botIsBlack;
+    private PieceColor? _botColor;
     private int _botElo = 1000;
 
     private readonly List<MoveRec> _history = new();
@@ -68,17 +68,49 @@ public sealed class ChessGame
                 _ => PieceColor.White
             };
 
-            if (want == PieceColor.White)
+            var botSeat = want == PieceColor.White ? PieceColor.Black : PieceColor.White;
+            _botColor = botSeat;
+
+            if (botSeat == PieceColor.White)
             {
-                if (_whiteConn is null) { _whiteConn = connId; _whiteName = name; _botIsBlack = true; return "white"; }
+                _whiteConn = null;
+                _whiteName = $"BOT ({_botElo})";
             }
             else
             {
-                if (_blackConn is null) { _blackConn = connId; _blackName = name; _botIsBlack = false; return "black"; }
+                _blackConn = null;
+                _blackName = $"BOT ({_botElo})";
             }
+
+            if (want == PieceColor.White)
+            {
+                if (_whiteConn == connId) return "white";
+                if (_whiteConn is null)
+                {
+                    _whiteConn = connId;
+                    _whiteName = name;
+                    _blackName = $"BOT ({_botElo})";
+                    return "white";
+                }
+            }
+            else
+            {
+                if (_blackConn == connId) return "black";
+                if (_blackConn is null)
+                {
+                    _blackConn = connId;
+                    _blackName = name;
+                    _whiteName = $"BOT ({_botElo})";
+                    return "black";
+                }
+            }
+
             return "spectator";
         }
 
+        _botColor = null;
+        if (_whiteConn == connId) { _whiteName = name; return "white"; }
+        if (_blackConn == connId) { _blackName = name; return "black"; }
         if (_whiteConn is null) { _whiteConn = connId; _whiteName = name; return "white"; }
         if (_blackConn is null) { _blackConn = connId; _blackName = name; return "black"; }
         return "spectator";
@@ -87,8 +119,18 @@ public sealed class ChessGame
     public bool Release(string connId)
     {
         bool changed = false;
-        if (_whiteConn == connId) { _whiteConn = null; changed = true; }
-        if (_blackConn == connId) { _blackConn = null; changed = true; }
+        if (_whiteConn == connId)
+        {
+            _whiteConn = null;
+            if (_botColor is null) _whiteName = "White";
+            changed = true;
+        }
+        if (_blackConn == connId)
+        {
+            _blackConn = null;
+            if (_botColor is null) _blackName = "Black";
+            changed = true;
+        }
         return changed;
     }
 
@@ -174,8 +216,8 @@ public sealed class ChessGame
 
     public object ExportPlayers() => new
     {
-        white = _whiteName,
-        black = _botIsBlack ? $"BOT ({_botElo})" : _blackName
+        white = _botColor == PieceColor.White ? $"BOT ({_botElo})" : _whiteName,
+        black = _botColor == PieceColor.Black ? $"BOT ({_botElo})" : _blackName
     };
 
     public string ExportCurrentFen() => _board.ToFen();
@@ -272,7 +314,7 @@ public sealed class ChessGame
     public MoveResult TryMove(string connId, int fx, int fy, int tx, int ty, string? promoteTo)
     {
         var expectedConn = _board.Turn == PieceColor.White ? _whiteConn : _blackConn;
-        if (_board.Turn == PieceColor.Black && _botIsBlack) expectedConn = null;
+        if (_botColor is PieceColor bot && bot == _board.Turn) expectedConn = null;
         if (expectedConn != null && expectedConn != connId)
             return new MoveResult { Ok = false, Error = "Not your seat" };
 
@@ -296,12 +338,19 @@ public sealed class ChessGame
         return res;
     }
 
-    public bool BotShouldMoveNow() => _botIsBlack && _board.Turn == PieceColor.Black;
+    public bool BotShouldMoveNow() => _botColor is PieceColor color && _board.Turn == color;
 
     public bool BotMove()
     {
-        var ok = _bot.TryMakeMove(_board, PieceColor.Black, _botElo, out var mv);
-        if (ok) { ApplyClockOnMove(PieceColor.Black); _lastMove = mv; }
+        if (_botColor is not PieceColor color)
+            return false;
+
+        var ok = _bot.TryMakeMove(_board, color, _botElo, out var mv);
+        if (ok)
+        {
+            ApplyClockOnMove(color);
+            _lastMove = mv;
+        }
         return ok;
     }
 
@@ -310,8 +359,8 @@ public sealed class ChessGame
         var toMove = _board.Turn;
         if (_board.HasAnyLegalMoves(toMove)) return null;
         if (_board.IsInCheck(toMove))
-            return toMove == PieceColor.White ? "Checkmate — Black wins" : "Checkmate — White wins";
-        return "Stalemate — Draw";
+            return toMove == PieceColor.White ? "Schachmatt – Schwarz gewinnt" : "Schachmatt – Weiß gewinnt";
+        return "Patt – Remis";
     }
 
     // PGN
@@ -320,8 +369,8 @@ public sealed class ChessGame
         var sb = new StringBuilder();
         sb.AppendLine($"[Event \"{eventName}\"]");
         sb.AppendLine($"[Site \"{site}\"]");
-        sb.AppendLine($"[White \"{_whiteName}\"]");
-        sb.AppendLine($"[Black \"{(_botIsBlack ? "BOT" : _blackName)}\"]");
+        sb.AppendLine($"[White \"{(_botColor == PieceColor.White ? $"BOT ({_botElo})" : _whiteName)}\"]");
+        sb.AppendLine($"[Black \"{(_botColor == PieceColor.Black ? $"BOT ({_botElo})" : _blackName)}\"]");
         sb.AppendLine($"[Date \"{DateTime.UtcNow:yyyy.MM.dd}\"]");
         for (int i = 0; i < _history.Count; i += 2)
         {

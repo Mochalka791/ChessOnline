@@ -4,10 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,11 +40,9 @@ app.MapGet("/api/local/analyze", async (
 
         var game = store.GetOrCreate(roomId);
 
-        // Kein letzter Zug -> Start-/Gesamtbewertung
         if (!game.TryGetLastMoveAnalysisContext(out var ctx))
         {
             var eval = await engine.AnalyzeAsync(game.ExportUciMoveList(), targetDepth, cancellationToken);
-
             var summary = new
             {
                 mover = "none",
@@ -67,7 +62,6 @@ app.MapGet("/api/local/analyze", async (
             return Results.Json(new { ok = true, depth = eval.Depth, summary });
         }
 
-        // Vor/Nach Bewertung des letzten Zugs
         var beforeEval = await engine.AnalyzeAsync(ctx.UciBefore, targetDepth, cancellationToken);
         var afterEval = await engine.AnalyzeAsync(ctx.UciAfter, targetDepth, cancellationToken);
 
@@ -79,8 +73,7 @@ app.MapGet("/api/local/analyze", async (
         var mover = ctx.Mover == PieceColor.White ? "Weiß" : "Schwarz";
 
         string bestSan = string.Empty;
-        if (!string.IsNullOrWhiteSpace(beforeEval.BestMove) &&
-            !string.Equals(beforeEval.BestMove, "(none)", StringComparison.OrdinalIgnoreCase) &&
+        if (!string.IsNullOrWhiteSpace(beforeEval.BestMove) && beforeEval.BestMove != "(none)" &&
             !string.Equals(beforeEval.BestMove, ctx.LastMoveUci, StringComparison.OrdinalIgnoreCase))
         {
             bestSan = game.ToSan(ctx.PositionBefore, beforeEval.BestMove);
@@ -88,7 +81,7 @@ app.MapGet("/api/local/analyze", async (
 
         var pvSan = game.ConvertPvToSan(ctx.PositionBefore, beforeEval.Pv, 6);
 
-        var summaryOk = new
+        var summary = new
         {
             mover,
             moveSan = ctx.LastMove.Notation,
@@ -106,13 +99,16 @@ app.MapGet("/api/local/analyze", async (
             depthUsed = Math.Min(beforeEval.Depth, afterEval.Depth)
         };
 
-        return Results.Json(new { ok = true, depth = summaryOk.depthUsed, summary = summaryOk });
+        return Results.Json(new { ok = true, depth = summary.depthUsed, summary });
     }
     catch (Exception ex)
     {
-        var message = (ex is FileNotFoundException) || (ex is TimeoutException)
-            ? ex.Message
-            : "Lokale Analyse konnte nicht gestartet werden. Bitte Stockfish-Installation prüfen.";
+        var message = ex switch
+        {
+            FileNotFoundException or TimeoutException => ex.Message,
+            _ => "Lokale Analyse konnte nicht gestartet werden. Bitte Stockfish-Installation prüfen."
+        };
+
         return Results.Json(new { ok = false, error = message }, statusCode: StatusCodes.Status500InternalServerError);
     }
 });
@@ -120,11 +116,8 @@ app.MapGet("/api/local/analyze", async (
 static double NormalizeEval(StockfishEngine.EngineEval eval, bool invertPerspective)
 {
     double value = eval.ScoreType == "mate"
-        ? (eval.Score > 0
-            ? 100_000 - Math.Min(Math.Abs(eval.Score), 50) * 1_000
-            : -100_000 + Math.Min(Math.Abs(eval.Score), 50) * 1_000)
+        ? (eval.Score > 0 ? 100_000 - Math.Min(Math.Abs(eval.Score), 50) * 1_000 : -100_000 + Math.Min(Math.Abs(eval.Score), 50) * 1_000)
         : eval.Score;
-
     return invertPerspective ? -value : value;
 }
 
@@ -164,11 +157,10 @@ static (string Label, string Severity, string Comment) ClassifyMove(double swing
     if (loss <= 10)
         return ("Präzise", "accurate", "Hält die Bewertung stabil.");
     if (loss <= 60)
-        return ("Ungenau", "inaccuracy", $"Gibt {loss} Punkte gegenüber dem besten Zug ab.");
+        return ($"Ungenau", "inaccuracy", $"Gibt {loss} Punkte gegenüber dem besten Zug ab.");
     if (loss <= 150)
-        return ("Fehler", "mistake", $"Verliert {loss} Punkte im Vergleich zur Engine.");
-
-    return ("Patzer", "blunder", $"Verschlechtert die Stellung um {loss} Punkte.");
+        return ($"Fehler", "mistake", $"Verliert {loss} Punkte im Vergleich zur Engine.");
+    return ($"Patzer", "blunder", $"Verschlechtert die Stellung um {loss} Punkte.");
 }
 
 static int RoundCp(double value) => (int)Math.Round(value, MidpointRounding.AwayFromZero);

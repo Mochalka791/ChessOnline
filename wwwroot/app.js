@@ -553,6 +553,7 @@ function onCellClick(x, y) {
             return;
         }
     }
+}
 
     if (canControlPiece(code)) {
         clearSelection();

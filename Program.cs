@@ -8,21 +8,21 @@ using System.Threading;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Сервисы
+// Services
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IGameStore, InMemoryGameStore>();
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<StockfishEngine>(); // локальный движок Stockfish
+builder.Services.AddSingleton<StockfishEngine>(); // lokaler Stockfish
 
 var app = builder.Build();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// SignalR-хаб
+// SignalR-Hub
 app.MapHub<ChessHub>("/chess");
 
-// ===== ЛОКАЛЬНЫЙ БЕСПЛАТНЫЙ АНАЛИЗ (Stockfish) =====
+// ===== LOKALER ANALYSE-ENDPOINT (Stockfish) =====
 // GET /api/local/analyze?roomId=testroom&depth=14
 app.MapGet("/api/local/analyze", async (
     IGameStore store,

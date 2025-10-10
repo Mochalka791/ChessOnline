@@ -1,65 +1,14 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="utf-8" />
+    <meta http-equiv="refresh" content="0; url=/menu/" />
+    <title>Arcade Hub</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chess Online</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <script src="https://unpkg.com/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    <link rel="canonical" href="/menu/" />
 </head>
 <body>
-    <div class="topbar">
-        <input id="room" placeholder="room-id" value="testroom" />
-        <input id="name" placeholder="your name" value="Player" />
-        <select id="side">
-            <option value="auto">Auto</option>
-            <option value="white">White</option>
-            <option value="black">Black</option>
-        </select>
-        <label>
-            Bot ELO:
-            <input id="elo" type="number" min="50" max="3000" step="50" value="1000" style="width:90px">
-        </label>
-        <button id="join">Join</button>
-        <button id="join-bot">Play vs Bot</button>
-        <button id="save-pgn">Download PGN</button>
-        <span id="turn">Turn: -</span>
-    </div>
-
-    <div class="layout">
-        <div class="left">
-            <div id="players"></div>
-            <div id="clocks"></div>
-            <div id="board" class="board"></div>
-        </div>
-        <div class="right">
-            <h3>Moves</h3>
-            <ol id="moves" class="moves"></ol>
-            <div id="analysis"></div>
-        </div>
-    </div>
-
-    <!-- GameOver overlay -->
-    <div id="over" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6);
-       align-items:center; justify-content:center;">
-        <div style="background:#1e1e1e; padding:1rem 1.2rem; border-radius:.6rem; width:min(92vw,520px);">
-            <h2 id="over-title" style="margin-top:0">Game Over</h2>
-            <div id="over-body"></div>
-            <div style="margin-top:.75rem; display:flex; gap:.5rem; justify-content:flex-end">
-                <button id="over-ai">AI analysis</button>
-                <button id="over-rematch">Play again</button>
-                <button id="over-close">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <template id="cell-tpl">
-        <div class="cell">
-            <img class="piece" />
-            <span class="label"></span>
-        </div>
-    </template>
-
-    <script src="/app.js"></script>
+    <p>Weiterleitung zur <a href="/menu/">Arcade-Auswahl</a> …</p>
+    <script>window.location.replace('/menu/');</script>
 </body>
 </html>

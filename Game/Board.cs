@@ -1,4 +1,6 @@
-﻿namespace ChessOnline;
+﻿using System.Text;
+
+namespace ChessOnline;
 
 public sealed class Board
 {
@@ -346,6 +348,72 @@ public sealed class Board
 
         Turn = Turn == PieceColor.White ? PieceColor.Black : PieceColor.White;
         return new MoveResult { Ok = true };
+    }
+
+    public string ToFen()
+    {
+        var sb = new StringBuilder();
+        for (int y = 0; y < 8; y++)
+        {
+            int empty = 0;
+            for (int x = 0; x < 8; x++)
+            {
+                var piece = Cells[x, y];
+                if (piece.IsEmpty)
+                {
+                    empty++;
+                    continue;
+                }
+
+                if (empty > 0)
+                {
+                    sb.Append(empty);
+                    empty = 0;
+                }
+
+                char symbol = piece.Type switch
+                {
+                    PieceType.Pawn => 'p',
+                    PieceType.Knight => 'n',
+                    PieceType.Bishop => 'b',
+                    PieceType.Rook => 'r',
+                    PieceType.Queen => 'q',
+                    PieceType.King => 'k',
+                    _ => ' '
+                };
+
+                if (piece.Color == PieceColor.White)
+                    symbol = char.ToUpperInvariant(symbol);
+
+                sb.Append(symbol);
+            }
+
+            if (empty > 0)
+                sb.Append(empty);
+
+            if (y < 7)
+                sb.Append('/');
+        }
+
+        sb.Append(' ');
+        sb.Append(Turn == PieceColor.White ? 'w' : 'b');
+        sb.Append(' ');
+
+        var castle = new StringBuilder();
+        if (WhiteCastleK) castle.Append('K');
+        if (WhiteCastleQ) castle.Append('Q');
+        if (BlackCastleK) castle.Append('k');
+        if (BlackCastleQ) castle.Append('q');
+        sb.Append(castle.Length == 0 ? "-" : castle.ToString());
+        sb.Append(' ');
+
+        if (EnPassant is { } ep)
+            sb.Append($"{(char)('a' + ep.x)}{8 - ep.y}");
+        else
+            sb.Append('-');
+
+        sb.Append(" 0 1");
+        return sb.ToString();
     }
 
     private (Piece[,] cells, PieceColor turn, bool wcK, bool wcQ, bool bcK, bool bcQ, (int, int)? ep) Snapshot()

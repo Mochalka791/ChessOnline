@@ -5,6 +5,14 @@ using System.Text;
 
 namespace ChessOnline;
 
+public readonly record struct LastMoveAnalysisContext(
+    MoveRec LastMove,
+    PieceColor Mover,
+    string UciBefore,
+    string UciAfter,
+    string LastMoveUci,
+    Board PositionBefore);
+
 public sealed class ChessGame
 {
     public string RoomId { get; }
@@ -16,7 +24,7 @@ public sealed class ChessGame
     private string _whiteName = "White";
     private string _blackName = "Black";
 
-    private bool _botIsBlack;
+    private PieceColor? _botColor;
     private int _botElo = 1000;
 
     private readonly List<MoveRec> _history = new();
@@ -60,17 +68,49 @@ public sealed class ChessGame
                 _ => PieceColor.White
             };
 
-            if (want == PieceColor.White)
+            var botSeat = want == PieceColor.White ? PieceColor.Black : PieceColor.White;
+            _botColor = botSeat;
+
+            if (botSeat == PieceColor.White)
             {
-                if (_whiteConn is null) { _whiteConn = connId; _whiteName = name; _botIsBlack = true; return "white"; }
+                _whiteConn = null;
+                _whiteName = $"BOT ({_botElo})";
             }
             else
             {
-                if (_blackConn is null) { _blackConn = connId; _blackName = name; _botIsBlack = false; return "black"; }
+                _blackConn = null;
+                _blackName = $"BOT ({_botElo})";
             }
+
+            if (want == PieceColor.White)
+            {
+                if (_whiteConn == connId) return "white";
+                if (_whiteConn is null)
+                {
+                    _whiteConn = connId;
+                    _whiteName = name;
+                    _blackName = $"BOT ({_botElo})";
+                    return "white";
+                }
+            }
+            else
+            {
+                if (_blackConn == connId) return "black";
+                if (_blackConn is null)
+                {
+                    _blackConn = connId;
+                    _blackName = name;
+                    _whiteName = $"BOT ({_botElo})";
+                    return "black";
+                }
+            }
+
             return "spectator";
         }
 
+        _botColor = null;
+        if (_whiteConn == connId) { _whiteName = name; return "white"; }
+        if (_blackConn == connId) { _blackName = name; return "black"; }
         if (_whiteConn is null) { _whiteConn = connId; _whiteName = name; return "white"; }
         if (_blackConn is null) { _blackConn = connId; _blackName = name; return "black"; }
         return "spectator";
@@ -79,8 +119,18 @@ public sealed class ChessGame
     public bool Release(string connId)
     {
         bool changed = false;
-        if (_whiteConn == connId) { _whiteConn = null; changed = true; }
-        if (_blackConn == connId) { _blackConn = null; changed = true; }
+        if (_whiteConn == connId)
+        {
+            _whiteConn = null;
+            if (_botColor is null) _whiteName = "White";
+            changed = true;
+        }
+        if (_blackConn == connId)
+        {
+            _blackConn = null;
+            if (_botColor is null) _blackName = "Black";
+            changed = true;
+        }
         return changed;
     }
 
@@ -126,17 +176,85 @@ public sealed class ChessGame
         };
     }
 
-    public string[] ExportHistory() => _history.Select((m, i) =>
+    public IReadOnlyList<object> ExportHistory()
     {
-        int n = i / 2 + 1;
-        return (i % 2 == 0) ? $"{n}. {m.Notation}" : $"{n}... {m.Notation}";
-    }).ToArray();
+        var list = new List<object>();
+        var board = new Board();
+        var uciMoves = BuildUciMoves(_history.Count);
+
+        list.Add(new
+        {
+            ply = 0,
+            moveNumber = 0,
+            side = "none",
+            san = "Startstellung",
+            uci = string.Empty,
+            eval = 0,
+            fen = board.ToFen()
+        });
+
+        for (int i = 0; i < _history.Count; i++)
+        {
+            var rec = _history[i];
+            var uci = uciMoves[i];
+            ApplyUci(board, uci);
+
+            list.Add(new
+            {
+                ply = i + 1,
+                moveNumber = i / 2 + 1,
+                side = (i % 2 == 0) ? "white" : "black",
+                san = rec.Notation,
+                uci,
+                eval = rec.EvalAfterCp,
+                fen = board.ToFen()
+            });
+        }
+
+        return list;
+    }
 
     public object ExportPlayers() => new
     {
-        white = _whiteName,
-        black = _botIsBlack ? $"BOT ({_botElo})" : _blackName
+        white = _botColor == PieceColor.White ? $"BOT ({_botElo})" : _whiteName,
+        black = _botColor == PieceColor.Black ? $"BOT ({_botElo})" : _blackName
     };
+
+    public string ExportCurrentFen() => _board.ToFen();
+
+    public IReadOnlyList<object> GetLegalMoves(int fx, int fy)
+    {
+        if (!_board.InBounds(fx, fy)) return Array.Empty<object>();
+
+        var piece = _board.Cells[fx, fy];
+        if (piece.IsEmpty || piece.Color != _board.Turn)
+            return Array.Empty<object>();
+
+        var moves = new List<object>();
+        foreach (var (sx, sy, tx, ty) in _board.AllLegalMoves(_board.Turn))
+        {
+            if (sx != fx || sy != fy) continue;
+            var target = _board.Cells[tx, ty];
+            bool isCapture = !target.IsEmpty;
+            if (!isCapture && piece.Type == PieceType.Pawn && tx != fx)
+            {
+                if (_board.EnPassant is { } ep && ep.x == tx && ep.y == ty)
+                    isCapture = true;
+            }
+            bool isPromotion = piece.Type == PieceType.Pawn && (ty == 0 || ty == 7);
+            bool isCastle = piece.Type == PieceType.King && Math.Abs(tx - fx) == 2;
+            moves.Add(new
+            {
+                tx,
+                ty,
+                capture = isCapture,
+                promotion = isPromotion,
+                castle = isCastle
+            });
+        }
+
+        return moves;
+    }
 
     private static readonly Dictionary<PieceType, int> Val = new()
     {
@@ -162,7 +280,7 @@ public sealed class ChessGame
     }
 
     private static string Sq(int x, int y) => $"{(char)('a' + x)}{8 - y}";
-    private string NotationFor(int fx, int fy, int tx, int ty, Piece moved, Piece captured, bool isMate, bool isCheck)
+    private string NotationFor(int fx, int fy, int tx, int ty, Piece moved, Piece captured, bool isMate, bool isCheck, string? promotion)
     {
         if (moved.Type == PieceType.King && Math.Abs(tx - fx) == 2) return (tx > fx) ? "O-O" : "O-O-O";
         string p = moved.Type switch
@@ -177,6 +295,18 @@ public sealed class ChessGame
         };
         string cap = (!captured.IsEmpty) ? "x" : "";
         string san = $"{p}{cap}{Sq(tx, ty)}";
+        if (moved.Type == PieceType.Pawn && !string.IsNullOrEmpty(promotion))
+        {
+            var promo = promotion.ToLowerInvariant();
+            san += "=" + promo switch
+            {
+                "rook" => "R",
+                "bishop" => "B",
+                "knight" => "N",
+                "queen" => "Q",
+                _ => promo[0].ToString().ToUpperInvariant()
+            };
+        }
         if (isMate) san += "#"; else if (isCheck) san += "+";
         return san;
     }
@@ -184,7 +314,7 @@ public sealed class ChessGame
     public MoveResult TryMove(string connId, int fx, int fy, int tx, int ty, string? promoteTo)
     {
         var expectedConn = _board.Turn == PieceColor.White ? _whiteConn : _blackConn;
-        if (_board.Turn == PieceColor.Black && _botIsBlack) expectedConn = null;
+        if (_botColor is PieceColor bot && bot == _board.Turn) expectedConn = null;
         if (expectedConn != null && expectedConn != connId)
             return new MoveResult { Ok = false, Error = "Not your seat" };
 
@@ -202,18 +332,25 @@ public sealed class ChessGame
         bool isMate = isCheck && !_board.HasAnyLegalMoves(opp);
 
         int evalAfter = Score(_board, moved.Color);
-        var san = NotationFor(fx, fy, tx, ty, moved, wasTarget, isMate, isCheck);
+        var san = NotationFor(fx, fy, tx, ty, moved, wasTarget, isMate, isCheck, promoteTo);
         _history.Add(new MoveRec(fx, fy, tx, ty, san, evalAfter));
 
         return res;
     }
 
-    public bool BotShouldMoveNow() => _botIsBlack && _board.Turn == PieceColor.Black;
+    public bool BotShouldMoveNow() => _botColor is PieceColor color && _board.Turn == color;
 
     public bool BotMove()
     {
-        var ok = _bot.TryMakeMove(_board, PieceColor.Black, _botElo, out var mv);
-        if (ok) { ApplyClockOnMove(PieceColor.Black); _lastMove = mv; }
+        if (_botColor is not PieceColor color)
+            return false;
+
+        var ok = _bot.TryMakeMove(_board, color, _botElo, out var mv);
+        if (ok)
+        {
+            ApplyClockOnMove(color);
+            _lastMove = mv;
+        }
         return ok;
     }
 
@@ -222,8 +359,8 @@ public sealed class ChessGame
         var toMove = _board.Turn;
         if (_board.HasAnyLegalMoves(toMove)) return null;
         if (_board.IsInCheck(toMove))
-            return toMove == PieceColor.White ? "Checkmate — Black wins" : "Checkmate — White wins";
-        return "Stalemate — Draw";
+            return toMove == PieceColor.White ? "Schachmatt – Schwarz gewinnt" : "Schachmatt – Weiß gewinnt";
+        return "Patt – Remis";
     }
 
     // PGN
@@ -232,8 +369,8 @@ public sealed class ChessGame
         var sb = new StringBuilder();
         sb.AppendLine($"[Event \"{eventName}\"]");
         sb.AppendLine($"[Site \"{site}\"]");
-        sb.AppendLine($"[White \"{_whiteName}\"]");
-        sb.AppendLine($"[Black \"{(_botIsBlack ? "BOT" : _blackName)}\"]");
+        sb.AppendLine($"[White \"{(_botColor == PieceColor.White ? $"BOT ({_botElo})" : _whiteName)}\"]");
+        sb.AppendLine($"[Black \"{(_botColor == PieceColor.Black ? $"BOT ({_botElo})" : _blackName)}\"]");
         sb.AppendLine($"[Date \"{DateTime.UtcNow:yyyy.MM.dd}\"]");
         for (int i = 0; i < _history.Count; i += 2)
         {
@@ -246,14 +383,18 @@ public sealed class ChessGame
     }
 
     // UCI-список ходов для локального движка (Stockfish)
-    public string ExportUciMoveList()
+    public string ExportUciMoveList(int take = int.MaxValue)
+        => string.Join(' ', BuildUciMoves(Math.Min(take, _history.Count)));
+
+    private List<string> BuildUciMoves(int take)
     {
         static string Sq(int x, int y) => $"{(char)('a' + x)}{8 - y}";
         var b = new Board(); // стартовая позиция
         var parts = new List<string>();
 
-        foreach (var m in _history)
+        for (int i = 0; i < take; i++)
         {
+            var m = _history[i];
             var p = b.Cells[m.Fx, m.Fy];
             var uci = $"{Sq(m.Fx, m.Fy)}{Sq(m.Tx, m.Ty)}";
             // Если пешка дошла до конца — по умолчанию ферзь (q)
@@ -263,7 +404,7 @@ public sealed class ChessGame
             parts.Add(uci);
         }
 
-        return string.Join(' ', parts);
+        return parts;
     }
 
     // Встроенный быстрый анализ (ACPL, оценка «уровня»)
@@ -319,5 +460,83 @@ public sealed class ChessGame
             white = new { acpl = acplW, estElo = MapACPLToElo(acplW) },
             black = new { acpl = acplB, estElo = MapACPLToElo(acplB) }
         };
+    }
+
+    public bool TryGetLastMoveAnalysisContext(out LastMoveAnalysisContext context)
+    {
+        if (_history.Count == 0)
+        {
+            context = default;
+            return false;
+        }
+
+        var moves = BuildUciMoves(_history.Count);
+        string uciAfter = string.Join(' ', moves);
+        string uciBefore = moves.Count > 1 ? string.Join(' ', moves.Take(moves.Count - 1)) : string.Empty;
+
+        var boardBefore = new Board();
+        foreach (var mv in moves.Take(moves.Count - 1))
+            ApplyUci(boardBefore, mv);
+
+        var mover = (_history.Count % 2 == 1) ? PieceColor.White : PieceColor.Black;
+        context = new LastMoveAnalysisContext(_history[^1], mover, uciBefore, uciAfter, moves[^1], boardBefore);
+        return true;
+    }
+
+    public string ToSan(Board position, string uci)
+    {
+        if (string.IsNullOrWhiteSpace(uci)) return string.Empty;
+        var (fx, fy, tx, ty, promotion) = ParseUci(uci);
+        var moved = position.Cells[fx, fy];
+        var captured = position.Cells[tx, ty];
+        var future = position.Clone();
+        future.TryMove(fx, fy, tx, ty, promotion);
+        var opp = moved.Color == PieceColor.White ? PieceColor.Black : PieceColor.White;
+        bool isCheck = future.IsInCheck(opp);
+        bool isMate = isCheck && !future.HasAnyLegalMoves(opp);
+        return NotationFor(fx, fy, tx, ty, moved, captured, isMate, isCheck, promotion);
+    }
+
+    public IReadOnlyList<string> ConvertPvToSan(Board position, string pv, int maxPlies = 6)
+    {
+        if (string.IsNullOrWhiteSpace(pv)) return Array.Empty<string>();
+        var board = position.Clone();
+        var list = new List<string>();
+        var moves = pv.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        int take = Math.Min(maxPlies, moves.Length);
+        for (int i = 0; i < take; i++)
+        {
+            var mv = moves[i];
+            var san = ToSan(board, mv);
+            if (string.IsNullOrEmpty(san)) break;
+            list.Add(san);
+            ApplyUci(board, mv);
+        }
+        return list;
+    }
+
+    private static (int fx, int fy, int tx, int ty, string? promotion) ParseUci(string uci)
+    {
+        int fx = uci[0] - 'a';
+        int fy = 8 - (uci[1] - '0');
+        int tx = uci[2] - 'a';
+        int ty = 8 - (uci[3] - '0');
+        string? promotion = null;
+        if (uci.Length >= 5)
+            promotion = uci[^1] switch
+            {
+                'q' => "queen",
+                'r' => "rook",
+                'b' => "bishop",
+                'n' => "knight",
+                _ => null
+            };
+        return (fx, fy, tx, ty, promotion);
+    }
+
+    private static void ApplyUci(Board board, string uci)
+    {
+        var (fx, fy, tx, ty, promotion) = ParseUci(uci);
+        board.TryMove(fx, fy, tx, ty, promotion);
     }
 }

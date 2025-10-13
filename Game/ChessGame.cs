@@ -280,10 +280,12 @@ public sealed class ChessGame
     }
 
     private static string Sq(int x, int y) => $"{(char)('a' + x)}{8 - y}";
-    private string NotationFor(int fx, int fy, int tx, int ty, Piece moved, Piece captured, bool isMate, bool isCheck, string? promotion)
+    private string NotationFor(Board positionBefore, int fx, int fy, int tx, int ty, Piece moved, Piece finalPiece,
+        bool isCapture, bool isMate, bool isCheck)
     {
         if (moved.Type == PieceType.King && Math.Abs(tx - fx) == 2) return (tx > fx) ? "O-O" : "O-O-O";
-        string p = moved.Type switch
+
+        string pieceLetter = moved.Type switch
         {
             PieceType.Pawn => "",
             PieceType.Knight => "N",
@@ -293,22 +295,68 @@ public sealed class ChessGame
             PieceType.King => "K",
             _ => ""
         };
-        string cap = (!captured.IsEmpty) ? "x" : "";
-        string san = $"{p}{cap}{Sq(tx, ty)}";
-        if (moved.Type == PieceType.Pawn && !string.IsNullOrEmpty(promotion))
+
+        string target = Sq(tx, ty);
+
+        if (moved.Type == PieceType.Pawn)
         {
-            var promo = promotion.ToLowerInvariant();
-            san += "=" + promo switch
+            string san = isCapture
+                ? $"{(char)('a' + fx)}x{target}"
+                : target;
+
+            if (ty is 0 or 7)
             {
-                "rook" => "R",
-                "bishop" => "B",
-                "knight" => "N",
-                "queen" => "Q",
-                _ => promo[0].ToString().ToUpperInvariant()
-            };
+                string promotion = finalPiece.Type switch
+                {
+                    PieceType.Rook => "R",
+                    PieceType.Bishop => "B",
+                    PieceType.Knight => "N",
+                    _ => "Q"
+                };
+                san += $"={promotion}";
+            }
+
+            if (isMate) san += "#";
+            else if (isCheck) san += "+";
+            return san;
         }
-        if (isMate) san += "#"; else if (isCheck) san += "+";
-        return san;
+
+        string disambiguation = string.Empty;
+        if (moved.Type != PieceType.King)
+        {
+            var candidates = new List<(int x, int y)>();
+            for (int y = 0; y < 8; y++)
+            {
+                for (int x = 0; x < 8; x++)
+                {
+                    if (x == fx && y == fy) continue;
+                    var candidate = positionBefore.Cells[x, y];
+                    if (candidate.Type != moved.Type || candidate.Color != moved.Color) continue;
+                    if (!positionBefore.TryMove(x, y, tx, ty, null, simulate: true).Ok) continue;
+                    candidates.Add((x, y));
+                }
+            }
+
+            if (candidates.Count > 0)
+            {
+                bool sameFile = candidates.Any(c => c.x == fx);
+                bool sameRank = candidates.Any(c => c.y == fy);
+                if (!sameFile)
+                    disambiguation = ((char)('a' + fx)).ToString();
+                else if (!sameRank)
+                    disambiguation = (8 - fy).ToString();
+                else
+                    disambiguation = $"{(char)('a' + fx)}{8 - fy}";
+            }
+        }
+
+        string capturePart = isCapture ? "x" : string.Empty;
+        string result = $"{pieceLetter}{disambiguation}{capturePart}{target}";
+
+        if (isMate) result += "#";
+        else if (isCheck) result += "+";
+
+        return result;
     }
 
     public MoveResult TryMove(string connId, int fx, int fy, int tx, int ty, string? promoteTo)
@@ -318,8 +366,12 @@ public sealed class ChessGame
         if (expectedConn != null && expectedConn != connId)
             return new MoveResult { Ok = false, Error = "Not your seat" };
 
+        var positionBefore = _board.Clone();
         var moved = _board.Cells[fx, fy];
         var wasTarget = _board.Cells[tx, ty];
+        bool isEnPassantCapture = moved.Type == PieceType.Pawn && tx != fx && wasTarget.IsEmpty &&
+                                   _board.EnPassant is { } ep && ep.x == tx && ep.y == ty;
+        bool isCapture = !wasTarget.IsEmpty || isEnPassantCapture;
 
         var res = _board.TryMove(fx, fy, tx, ty, promoteTo);
         if (!res.Ok) return res;
@@ -332,7 +384,8 @@ public sealed class ChessGame
         bool isMate = isCheck && !_board.HasAnyLegalMoves(opp);
 
         int evalAfter = Score(_board, moved.Color);
-        var san = NotationFor(fx, fy, tx, ty, moved, wasTarget, isMate, isCheck, promoteTo);
+        var finalPiece = _board.Cells[tx, ty];
+        var san = NotationFor(positionBefore, fx, fy, tx, ty, moved, finalPiece, isCapture, isMate, isCheck);
         _history.Add(new MoveRec(fx, fy, tx, ty, san, evalAfter));
 
         return res;
@@ -494,7 +547,9 @@ public sealed class ChessGame
         var opp = moved.Color == PieceColor.White ? PieceColor.Black : PieceColor.White;
         bool isCheck = future.IsInCheck(opp);
         bool isMate = isCheck && !future.HasAnyLegalMoves(opp);
-        return NotationFor(fx, fy, tx, ty, moved, captured, isMate, isCheck, promotion);
+        bool isCapture = !captured.IsEmpty || (moved.Type == PieceType.Pawn && tx != fx && captured.IsEmpty);
+        var finalPiece = future.Cells[tx, ty];
+        return NotationFor(position, fx, fy, tx, ty, moved, finalPiece, isCapture, isMate, isCheck);
     }
 
     public IReadOnlyList<string> ConvertPvToSan(Board position, string pv, int maxPlies = 6)

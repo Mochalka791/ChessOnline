@@ -43,7 +43,8 @@ app.MapGet("/api/local/analyze", async (
         if (!game.TryGetLastMoveAnalysisContext(out var ctx))
         {
             var eval = await engine.AnalyzeAsync(game.ExportUciMoveList(), targetDepth, cancellationToken);
-            var summary = new
+
+            return Results.Json(new { ok = true, depth = eval.Depth, summary = new
             {
                 mover = "none",
                 moveSan = "(keine Züge)",
@@ -57,9 +58,8 @@ app.MapGet("/api/local/analyze", async (
                 comment = "Die Partie hat noch nicht begonnen. Spiele einen Zug, um Feedback zu erhalten.",
                 bestSan = string.Empty,
                 pvSan = Array.Empty<string>()
-            };
-
-            return Results.Json(new { ok = true, depth = eval.Depth, summary });
+            }
+            });
         }
 
         var beforeEval = await engine.AnalyzeAsync(ctx.UciBefore, targetDepth, cancellationToken);

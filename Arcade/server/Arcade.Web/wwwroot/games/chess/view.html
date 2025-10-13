@@ -1,0 +1,24 @@
+<section class="chess-layout">
+  <div class="chess-board" id="chess-board" role="grid" aria-label="Schachbrett"></div>
+  <aside class="chess-sidebar">
+    <div class="chess-panel">
+      <h2>Partie</h2>
+      <p id="chess-status" class="chess-status">Bereit für den ersten Zug.</p>
+      <div class="chess-controls">
+        <label>Analyse-Tiefe
+          <input type="range" id="analysis-depth" min="6" max="24" value="14" />
+          <span id="analysis-depth-value">14</span>
+        </label>
+        <button class="btn btn-primary" id="analyze-btn">Stockfish Eval</button>
+      </div>
+    </div>
+    <div class="chess-panel">
+      <h3>Zugliste</h3>
+      <ol id="move-list" class="chess-move-list"></ol>
+    </div>
+    <div class="chess-panel">
+      <h3>Analyse</h3>
+      <div id="analysis-output" class="chess-analysis">Noch keine Analyse vorhanden.</div>
+    </div>
+  </aside>
+</section>

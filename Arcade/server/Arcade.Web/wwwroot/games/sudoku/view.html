@@ -1,0 +1,22 @@
+<section class="sudoku-panel">
+  <div class="sudoku-panel__board" id="sudoku-board"></div>
+  <div class="sudoku-panel__controls">
+    <h2>Sudoku</h2>
+    <p class="game-panel__status" id="sudoku-status">Setze eine Zahl (1-9).</p>
+    <div class="sudoku-form">
+      <label>Zeile
+        <input type="number" id="sudoku-row" min="1" max="9" value="1" />
+      </label>
+      <label>Spalte
+        <input type="number" id="sudoku-column" min="1" max="9" value="1" />
+      </label>
+      <label>Wert
+        <input type="number" id="sudoku-value" min="1" max="9" value="1" />
+      </label>
+    </div>
+    <div class="game-panel__actions">
+      <button class="btn btn-primary" id="sudoku-validate">Validieren</button>
+      <button class="btn btn-outline" id="sudoku-reset">Reset</button>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,74 @@
+.toast-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 50;
+}
+
+.toast {
+  min-width: 280px;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-elevated);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.toast--error {
+  border-color: rgba(255, 118, 117, 0.6);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--color-secondary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.debug-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: rgba(12, 15, 30, 0.85);
+  border-top-right-radius: var(--radius-lg);
+  border-right: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
+  z-index: 60;
+}
+
+.debug-panel__title {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.debug-panel__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.debug-panel button {
+  font-size: 0.8rem;
+  padding: 0.5rem;
+}

@@ -10,15 +10,17 @@
     <script type="module" src="/app.js" defer></script>
 </head>
 <body>
-    <noscript><div class="noscript-warning">Bitte JavaScript aktivieren.</div></noscript>
+    <noscript>
+        <div class="noscript-warning">Bitte JavaScript aktivieren, um die Arcade zu nutzen.</div>
+    </noscript>
 
     <!-- LOBBY -->
-    <main id="lobby-view" class="lobby" aria-labelledby="lobby-title">
+    <main id="lobby-view" class="lobby lobby-view" aria-labelledby="lobby-title">
         <header class="lobby-hero">
             <div>
                 <p class="eyebrow">Arcade</p>
                 <h1 id="lobby-title">Wähle dein Spiel</h1>
-                <p class="subline">Schach ist bereit. Snake/Tetris — bald.</p>
+                <p class="subline">Starte mit Schach oder bleibe dran für Snake, Tetris und weitere Klassiker.</p>
             </div>
             <button id="open-chess" class="cta primary" type="button">Jetzt Schach spielen</button>
         </header>
@@ -26,20 +28,29 @@
         <section class="game-grid" role="list">
             <article class="game-card" role="listitem">
                 <header>
-                    <h2>Schach</h2><span class="badge live">Verfügbar</span>
+                    <h2>Schach</h2>
+                    <span class="badge live">Verfügbar</span>
                 </header>
-                <p>Spiele online oder gegen Stockfish, mit Live-Analyse.</p>
+                <p>Analysiere Partien, spiele online oder fordere den Stockfish-Bot heraus.</p>
                 <button class="cta secondary" data-game="chess" type="button">Öffnen</button>
             </article>
 
             <article class="game-card disabled" role="listitem" aria-disabled="true">
-                <header><h2>Snake</h2><span class="badge soon">Bald</span></header>
-                <p>Update folgt.</p><button class="cta" disabled>Nicht verfügbar</button>
+                <header>
+                    <h2>Snake</h2>
+                    <span class="badge soon">Bald</span>
+                </header>
+                <p>Füttere die Schlange und knacke den Highscore – Update folgt.</p>
+                <button class="cta" type="button" disabled>Nicht verfügbar</button>
             </article>
 
             <article class="game-card disabled" role="listitem" aria-disabled="true">
-                <header><h2>Tetris</h2><span class="badge soon">Bald</span></header>
-                <p>Update folgt.</p><button class="cta" disabled>Nicht verfügbar</button>
+                <header>
+                    <h2>Tetris</h2>
+                    <span class="badge soon">Bald</span>
+                </header>
+                <p>Staple Tetrominos mit smoothen Animationen und Soundeffekten.</p>
+                <button class="cta" type="button" disabled>Nicht verfügbar</button>
             </article>
         </section>
     </main>
@@ -47,7 +58,7 @@
     <!-- CHESS -->
     <main id="chess-view" class="chess hidden" aria-labelledby="chess-title">
         <header class="topbar">
-            <button id="back-to-lobby" class="link">&larr; Zurück</button>
+            <button id="back-to-lobby" class="link" type="button">&larr; Zurück</button>
             <h1 id="chess-title">ChessOnline</h1>
             <div id="status-banner" class="status status-offline">Offline</div>
         </header>

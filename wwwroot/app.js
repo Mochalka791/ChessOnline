@@ -52,6 +52,7 @@ const conn = hasSignalR
 // ---- Helpers ----
 function persistSettings() { localStorage.setItem('arcade.settings.v1', JSON.stringify(settings)); }
 function setView(name) {
+    if (!lobbyView || !chessView) return;
     if (name === 'chess') { lobbyView.classList.add('hidden'); chessView.classList.remove('hidden'); }
     else { chessView.classList.add('hidden'); lobbyView.classList.remove('hidden'); }
 }

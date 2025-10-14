@@ -4,28 +4,28 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Arcade • Home</title>
-    <link rel="stylesheet" href="/css/menu.css" />
+    <link rel="stylesheet" href="menu.css" />
 </head>
 <body>
     <!-- Interaktiver Hintergrund -->
     <canvas id="bg"></canvas>
 
     <header class="topbar">
-        <div class="brand">ARCADE</div>
+        <div class="brand">ARCUDIS</div>
         <nav class="actions">
-            <a class="btn ghost" href="/login/">Anmelden</a> <!-- 1.3 -->
+            <a class="btn ghost" href="../login/">Anmelden</a> <!-- 1.3 -->
         </nav>
     </header>
 
     <main class="home">
         <section class="hero">
-            <h1>Wähle dein Spiel</h1>
-            <p>Spiele Schach gegen Freunde oder den Bot. Snake und Tetris folgen.</p>
+            <h1>Arcade</h1>
+            <p>Wähle dein Spiel</p>
         </section>
 
         <section class="grid">
             <!-- Schach-Karte -->
-            <a class="card glow" href="/chess/">
+            <a class="card glow" href="../chess/">
                 <div class="thumb chess"></div>
                 <div class="card-body">
                     <h2>Schach <span class="tag ok">VERFÜGBAR</span></h2>
@@ -53,10 +53,28 @@
                 </div>
             </a>
 
-            <a class="card" href="#game3">
+            <a class="card" href="#game4">
                 <div class="thumb chess like"></div>
                 <div class="card-body">
-                    <h2>Spiel 3 <span class="tag soon">BALD</span></h2>
+                    <h2>Spiel 4 <span class="tag soon">BALD</span></h2>
+                    <p>Update folgt.</p>
+                    <span class="btn disabled">Nicht verfügbar</span>
+                </div>
+            </a>
+
+            <a class="card" href="#game5">
+                <div class="thumb chess like"></div>
+                <div class="card-body">
+                    <h2>Spiel 5 <span class="tag soon">BALD</span></h2>
+                    <p>Update folgt.</p>
+                    <span class="btn disabled">Nicht verfügbar</span>
+                </div>
+            </a>
+
+            <a class="card" href="#game6">
+                <div class="thumb chess like"></div>
+                <div class="card-body">
+                    <h2>Spiel 6 <span class="tag soon">BALD</span></h2>
                     <p>Update folgt.</p>
                     <span class="btn disabled">Nicht verfügbar</span>
                 </div>
@@ -64,6 +82,6 @@
         </section>
     </main>
 
-    <script src="/js/bg.js"></script> <!-- interaktiver Hintergrund -->
+    <script src="../js/bg.js"></script> <!-- interaktiver Hintergrund -->
 </body>
 </html>

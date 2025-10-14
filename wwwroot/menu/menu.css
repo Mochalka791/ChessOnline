@@ -1,8 +1,8 @@
 ﻿:root {
-    /* Unsere Farben */
+    /* farben */
     --bg: #0b1322;
     --panel: #111a2b;
-    --brand: #41d483; /* grün aus deinem Screenshot */
+    --brand: #41d483; 
     --text: #e9f1ff;
     --muted: #9fb0c8;
     --radius: 18px;
@@ -100,7 +100,7 @@ body {
 
     .hero h1 {
         margin: 0 0 6px;
-        font-size: clamp(28px, 6vw, 54px);
+        font-size: clamp(28px, 6vw, 30px);
         font-weight: 800;
         letter-spacing: .02em
     }
@@ -151,7 +151,7 @@ body {
     }
 
 .thumb {
-    aspect-ratio: 16/10;
+    aspect-ratio: 16/8;
     border-radius: calc(var(--radius) - 8px);
     margin: 10px;
     overflow: hidden;

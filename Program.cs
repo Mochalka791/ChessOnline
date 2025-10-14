@@ -16,11 +16,22 @@ builder.Services.AddSingleton<StockfishEngine>(); // lokaler Stockfish
 
 var app = builder.Build();
 
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path == "/")
+    {
+        context.Response.Redirect("/menu/");
+        return;
+    }
+
+    await next();
+});
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
 // SignalR-Hub
-app.MapHub<ChessHub>("/chess");
+app.MapHub<ChessHub>("/hubs/chess");
 
 // ===== LOKALER ANALYSE-ENDPOINT (Stockfish) =====
 // GET /api/local/analyze?roomId=testroom&depth=14

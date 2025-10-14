@@ -1,102 +1,68 @@
 <body>
-    <!-- Topbar -->
-    <header class="co-topbar">
-        <a class="co-btn co-btn-ghost" href="/">← Zurück zum Menü</a>
-        <h1 class="co-title">ChessOnline</h1>
-        <div id="status-banner" class="co-status co-offline">OFFLINE</div>
+    <header class="chess-topbar">
+        <div class="chess-brand">CHESS.KO</div>
+        <div class="chess-badge"> </div>
+        <div></div>
     </header>
 
-    <!-- Hauptlayout: Board links, Panel rechts -->
-    <main class="co-shell">
-        <!-- Linke Seite -->
-        <section class="co-left">
-            <!-- Controls-Zeile -->
-            <div class="co-controls">
-                <label>Raum <input id="room" type="text" value="testroom"></label>
-                <label>Name <input id="name" type="text" value="Viktor"></label>
-                <label>
-                    Seite
-                    <select id="side">
-                        <option value="auto">Auto</option>
-                        <option value="white">Weiß</option>
-                        <option value="black">Schwarz</option>
-                    </select>
-                </label>
-                <label>ELO Bot <input id="elo" type="number" min="50" max="3000" value="1000"></label>
-
-                <div class="co-actions">
-                    <button id="join" class="co-btn co-btn-pill">Online beitreten</button>
-                    <button id="join-bot" class="co-btn co-btn-pill co-btn-dim">Gegen Bot</button>
-                </div>
-
-                <div class="co-analysis-quick">
-                    <label class="co-depth">
-                        Tiefe
-                        <input id="depth" type="number" min="5" max="30" value="14">
-                        <span id="depth-value">14</span>
-                    </label>
-                    <button id="local-analysis" class="co-btn">Lokale Analyse</button>
-                    <button id="theme-toggle" class="co-btn">Dunkles Theme</button>
-                </div>
-            </div>
-
-            <!-- Board -->
-            <div class="co-board-wrap">
-                <div id="board" class="board" role="grid" aria-label="Schachbrett"></div>
-                <template id="cell-tpl">
-                    <div class="cell"><img class="piece" alt=""></div>
-                </template>
-            </div>
-
-            <!-- Share -->
-            <div class="co-share">
-                <button id="copy-pgn" class="co-btn">PGN kopieren</button>
-                <button id="copy-fen" class="co-btn">FEN kopieren</button>
+    <main class="chess-wrap">
+        <!-- Links -->
+        <section class="left">
+            <div class="panel">
+                <div class="panel thin menu">Menu</div>
             </div>
         </section>
 
-        <!-- Rechte Seite -->
-        <aside class="co-right">
-            <div class="co-panel">
-                <div class="co-panel-head">
-                    <strong>Play Bot</strong>
+        <!-- Mitte -->
+        <section class="center">
+            <div class="panel thin player">
+                <div class="avatar">👤</div>
+                <div>
+                    <div class="name">Nickname</div>
+                    <div class="bar"></div>
+                    <div class="meta">ELo (0000) &nbsp;&nbsp; lvl. 30</div>
                 </div>
-                <div class="co-chat">
-                    <div class="co-chat-bubble">Drücke „Gegen Bot“, um zu starten. Viel Erfolg!</div>
-                </div>
+                <div></div>
             </div>
 
-            <div class="co-panel">
-                <div class="co-panel-head">
-                    <strong>Spieler</strong>
-                </div>
-                <div id="players" class="co-players">Weiß: — • Schwarz: —</div>
-                <div class="co-clocks">
-                    <div>Weiß: <b id="clock-white">05:00</b></div>
-                    <div>Schwarz: <b id="clock-black">05:00</b></div>
-                </div>
+            <div class="panel board-shell">
+                <div id="board"><!-- Canvas/SVG deines Boards --></div>
             </div>
 
-            <div class="co-panel">
-                <div class="co-panel-head">
-                    <strong>Züge</strong>
-                </div>
-                <ol id="moves" class="co-moves"></ol>
-                <div id="moves-placeholder" class="co-muted">Noch keine Züge.</div>
+            <div class="bottom">
+                <button class="square-btn" aria-label="??"></button>
+                <div class="timer-line"></div>
             </div>
+        </section>
 
-            <div class="co-panel">
-                <div class="co-panel-head">
-                    <strong>Analyse</strong>
+        <!-- Rechts -->
+        <section class="right">
+            <div class="panel thin head"></div>
+            <div class="panel moves">
+                <ol>
+                    <li>e4 c5</li>
+                    <li>d3 Nc6</li>
+                    <li>d4 Rb8</li>
+                </ol>
+            </div>
+            <div class="panel footer">
+                <div>
+                    <div class="action">↩️</div>
+                    <div class="label">Rückgängig</div>
                 </div>
-                <div id="analysis" class="co-analysis">
-                    <div class="co-muted">Drücke „Lokale Analyse“ nach einem Zug.</div>
+                <div>
+                    <div class="action">⚡</div>
+                    <div class="label">Aufgeben</div>
+                </div>
+                <div>
+                    <div class="action">💬</div>
+                    <div class="label">Hinweis</div>
+                </div>
+                <div>
+                    <div class="action">★</div>
+                    <div class="label">Optionen</div>
                 </div>
             </div>
-        </aside>
+        </section>
     </main>
-
-    <!-- Toaster & Loader (bleiben neutral) -->
-    <div id="toast-container" class="toasts"></div>
-    <div id="loading-overlay" class="loading-overlay" hidden>Bitte warten…</div>
 </body>

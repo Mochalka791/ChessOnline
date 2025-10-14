@@ -44,21 +44,25 @@ app.MapGet("/api/local/analyze", async (
         {
             var eval = await engine.AnalyzeAsync(game.ExportUciMoveList(), targetDepth, cancellationToken);
 
-            return Results.Json(new { ok = true, depth = eval.Depth, summary = new
+            return Results.Json(new
             {
-                mover = "none",
-                moveSan = "(keine Züge)",
-                evaluationBefore = FormatEvalDisplay(eval, invertPerspective: false),
-                evaluationAfter = FormatEvalDisplay(eval, invertPerspective: false),
-                cpBefore = RoundCp(NormalizeEval(eval, invertPerspective: false)),
-                cpAfter = RoundCp(NormalizeEval(eval, invertPerspective: false)),
-                swing = 0,
-                judgement = "Überblick",
-                severity = "info",
-                comment = "Die Partie hat noch nicht begonnen. Spiele einen Zug, um Feedback zu erhalten.",
-                bestSan = string.Empty,
-                pvSan = Array.Empty<string>()
-            }
+                ok = true,
+                depth = eval.Depth,
+                summary = new
+                {
+                    mover = "none",
+                    moveSan = "(keine Züge)",
+                    evaluationBefore = FormatEvalDisplay(eval, invertPerspective: false),
+                    evaluationAfter = FormatEvalDisplay(eval, invertPerspective: false),
+                    cpBefore = RoundCp(NormalizeEval(eval, invertPerspective: false)),
+                    cpAfter = RoundCp(NormalizeEval(eval, invertPerspective: false)),
+                    swing = 0,
+                    judgement = "Überblick",
+                    severity = "info",
+                    comment = "Die Partie hat noch nicht begonnen. Spiele einen Zug, um Feedback zu erhalten.",
+                    bestSan = string.Empty,
+                    pvSan = Array.Empty<string>()
+                }
             });
         }
 

@@ -61,7 +61,7 @@ const HubConnectionState = hasSignalR && window.signalR?.HubConnectionState
 
 const conn = hasSignalR
     ? new signalR.HubConnectionBuilder()
-        .withUrl('/chess')
+        .withUrl('/hubs/chess')
         .withAutomaticReconnect()
         .build()
     : {

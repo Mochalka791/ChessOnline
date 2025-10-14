@@ -3,162 +3,395 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chess.KO • Online spielen</title>
-    <link rel="stylesheet" href="../menu/menu.css" />
-    <link rel="stylesheet" href="chess.css" />
-    <script src="https://unpkg.com/@microsoft/signalr@latest/dist/browser/signalr.min.js" defer></script>
-    <script src="/chess/chess.js" defer></script>
+    <title>ChessOnline • Spiel</title>
+
+    <!-- Vollständiges Layout/Look (kein Scrollen, Settings links, Actions unten rechts) -->
+    <style>
+        :root {
+            --bg: #0b1322;
+            --panel: #111a2b;
+            --panel2: #0f182a;
+            --text: #e9f1ff;
+            --muted: #9fb0c8;
+            --brand: #41d483;
+            --line: #0a1120;
+            --radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html, body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font: 500 16px/1.45 system-ui,Segoe UI,Inter,Arial;
+            overflow: hidden; /* ⛔ kein Scrollen */
+        }
+
+        /* Header – kompakt, CHESS.KO ohne Rahmen/Glow */
+        .chess-topbar {
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            background: #0f1627;
+            border-bottom: 1px solid #000;
+        }
+
+        .brand-link {
+            font-weight: 800;
+            letter-spacing: .28rem;
+            text-decoration: none;
+            color: var(--text);
+            padding: 6px 2px;
+            border-radius: 0;
+            outline: none;
+            box-shadow: none;
+            border: none;
+            background: transparent;
+        }
+
+            .brand-link:hover, .brand-link:focus {
+                text-decoration: underline;
+            }
+
+        .top-right {
+            width: 220px;
+        }
+        /* Platzhalter */
+
+        /* Haupt-Grid = volle Höhe abzüglich Header – Settings links */
+        .page {
+            height: calc(100svh - 56px);
+            display: grid;
+            grid-template-columns: 320px minmax(540px, 1fr) 360px; /* L | Mitte | R */
+            grid-template-rows: 100%;
+            gap: 16px;
+            padding: 16px;
+            max-width: 1600px;
+            margin-inline: auto;
+        }
+
+        /* Panels */
+        .panel {
+            background: linear-gradient(180deg, var(--panel) 60%, var(--panel2));
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 8px 28px rgba(0,0,0,.35);
+        }
+
+        /* ===== linke Spalte: Einstellungen ===== */
+        .left {
+            display: grid;
+            grid-template-rows: 1fr;
+        }
+
+        .settings {
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-height: 0;
+        }
+
+            .settings h3 {
+                margin: 0;
+                font-size: 1rem;
+                color: #dbe7ff
+            }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            padding: 6px 10px;
+            border: 1px solid #0b233e;
+            border-radius: 10px;
+            background: #0f182a;
+            color: #cfe1ff;
+            cursor: pointer;
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+            .chip input {
+                accent-color: var(--brand);
+            }
+
+        /* ===== Mitte: super-kompakter Spieler oben/unten + maximales Brett ===== */
+        .center {
+            display: grid;
+            grid-template-rows: auto 1fr auto; /* oben/mitte/unten */
+            gap: 8px;
+            min-width: 540px;
+            min-height: 0;
+        }
+        /* kompakter Spieler OBEN */
+        .player {
+            padding: 6px 10px;
+            display: grid;
+            grid-template-columns: 40px 1fr auto;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #000;
+            background: #0d1526;
+            display: grid;
+            place-items: center;
+            border-radius: 6px;
+        }
+
+        .name {
+            font-weight: 800;
+            font-size: .95rem;
+        }
+
+        .bar {
+            height: 4px;
+            border: 2px solid #000;
+            border-radius: 2px;
+            width: 120px;
+            margin: 2px 0;
+        }
+
+        .meta {
+            color: var(--muted);
+            font-size: .8rem
+        }
+
+        /* Board-Container: JS setzt Quadratform auf Maximum */
+        .board-wrap {
+            display: grid;
+            place-items: center;
+            min-height: 0;
+            padding: 0;
+        }
+
+        .board-shell {
+            border: 4px solid #000;
+            background: #0d1526;
+            padding: 8px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,.4);
+            width: 420px;
+            height: 420px; /* Start – JS überschreibt */
+        }
+
+        #board {
+            width: 100%;
+            height: 100%;
+            outline: 1px solid rgba(255,255,255,.06);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* kompakter Spieler UNTEN */
+        .player-bottom {
+            padding: 6px 10px;
+            display: grid;
+            grid-template-columns: 44px 1fr auto;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .player-bottom .avatar {
+                width: 44px;
+                height: 44px;
+                border-radius: 8px;
+            }
+
+        .timer-line {
+            height: 4px;
+            width: 180px;
+            border: 2px solid #000;
+            border-radius: 2px;
+        }
+
+        .square-btn {
+            width: 44px;
+            height: 44px;
+            border: 6px solid #000;
+            background: transparent;
+        }
+
+        /* ===== rechte Spalte: Züge + Button-Bar unten horizontal ===== */
+        .right {
+            display: grid;
+            grid-template-rows: 1fr auto;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        .moves {
+            padding: 10px;
+            overflow: auto;
+            min-height: 0;
+        }
+
+            .moves ol {
+                margin: 0;
+                padding-left: 18px
+            }
+
+        .actions-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            gap: 10px;
+            background: linear-gradient(180deg, var(--panel) 60%, var(--panel2));
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+        }
+
+        .action {
+            height: 46px;
+            min-width: 46px;
+            display: inline-grid;
+            place-items: center;
+            border: 2px solid #000;
+            background: transparent;
+            color: var(--text);
+            border-radius: 10px;
+            transition: .2s ease;
+        }
+
+            .action:hover {
+                box-shadow: 0 0 0 4px rgba(65,212,131,.1), inset 0 0 0 1px rgba(255,255,255,.06);
+            }
+
+        /* Responsiv: sehr schmal → rechte Spalte ausblenden (weiter kein Scrollen) */
+        @media (max-width:1200px) {
+            .page {
+                grid-template-columns: 1fr;
+            }
+
+            .right {
+                display: none;
+            }
+        }
+    </style>
+
+    <!-- Logik (No-Wait + Board-Resize + SignalR optional) -->
+    <script defer src="chess.js"></script>
 </head>
 <body>
-    <canvas id="bg" aria-hidden="true"></canvas>
-
-    <div class="chess-app">
-        <header class="chess-topbar">
-            <a class="brand" href="/">CHESS.KO</a>
-            <div id="status-banner" class="status-pill status-ready" role="status">Bereit</div>
-        </header>
-
-        <main class="chess-grid" aria-label="Schachoberfläche">
-            <aside class="panel menu-panel">
-                <h2 class="panel-title">Menü</h2>
-                <form class="menu-form" autocomplete="off">
-                    <label class="field">
-                        <span>Raum</span>
-                        <input id="room" type="text" value="testroom" />
-                    </label>
-                    <label class="field">
-                        <span>Name</span>
-                        <input id="name" type="text" value="Spieler" />
-                    </label>
-                    <label class="field">
-                        <span>Seite</span>
-                        <select id="side">
-                            <option value="auto">Automatisch</option>
-                            <option value="white">Weiß</option>
-                            <option value="black">Schwarz</option>
-                        </select>
-                    </label>
-                    <label class="field">
-                        <span>Bot-ELO <strong id="elo-value">1000</strong></span>
-                        <input id="elo" type="range" min="400" max="3200" step="50" value="1000" />
-                    </label>
-                </form>
-
-                <div class="menu-actions">
-                    <button id="join" type="button" class="btn solid full">Online beitreten</button>
-                    <button id="join-bot" type="button" class="btn ghost full">Gegen Bot</button>
-                </div>
-
-                <div class="menu-analysis">
-                    <label class="field">
-                        <span>Tiefe <strong id="depth-value">14</strong></span>
-                        <input id="depth" type="range" min="4" max="30" step="2" value="14" />
-                    </label>
-                    <div class="analysis-buttons">
-                        <button id="local-analysis" type="button" class="btn solid full">Stockfish Analyse</button>
-                        <button id="theme-toggle" type="button" class="btn ghost full">Dunkles Theme</button>
-                    </div>
-                </div>
-
-                <section class="status-box">
-                    <h3>Status</h3>
-                    <div id="status-log" class="status-log">
-                        <p>Wähle einen Modus, um loszulegen.</p>
-                    </div>
-                </section>
-            </aside>
-
-            <section class="board-column">
-                <article class="panel player-strip">
-                    <div class="player-card">
-                        <div class="avatar" aria-hidden="true">👤</div>
-                        <div class="player-meta">
-                            <div id="players">Weiß: — • Schwarz: —</div>
-                            <div id="turn" class="turn-pill" data-side="white">Am Zug: –</div>
-                        </div>
-                        <div id="board-badge" class="board-badge" hidden></div>
-                    </div>
-                    <div class="clocks" id="clocks" aria-live="polite">
-                        <div class="clock clock-white">
-                            <span class="label">Weiß</span>
-                            <span class="time" data-side="white">00:00</span>
-                            <span class="increment">+2s</span>
-                        </div>
-                        <div class="clock clock-black">
-                            <span class="label">Schwarz</span>
-                            <span class="time" data-side="black">00:00</span>
-                            <span class="increment">+2s</span>
-                        </div>
-                    </div>
-                </article>
-
-                <div class="panel board-panel">
-                    <div class="board-shell">
-                        <div id="board" class="board" role="grid" aria-label="Schachbrett"></div>
-                        <div id="move-hints" class="move-hints" aria-hidden="true"></div>
-                    </div>
-                </div>
-
-                <footer class="panel action-strip">
-                    <div class="action-grid">
-                        <button id="request-undo" type="button" class="icon-btn">
-                            <span class="icon">↩️</span>
-                            <span class="label">Rückgängig</span>
-                        </button>
-                        <button id="offer-draw" type="button" class="icon-btn">
-                            <span class="icon">🤝</span>
-                            <span class="label">Remis</span>
-                        </button>
-                        <button id="resign" type="button" class="icon-btn">
-                            <span class="icon">⚡</span>
-                            <span class="label">Aufgeben</span>
-                        </button>
-                        <button id="copy-pgn" type="button" class="icon-btn">
-                            <span class="icon">📄</span>
-                            <span class="label">PGN</span>
-                        </button>
-                        <button id="copy-fen" type="button" class="icon-btn">
-                            <span class="icon">♟</span>
-                            <span class="label">FEN</span>
-                        </button>
-                    </div>
-                </footer>
-            </section>
-
-            <aside class="panel info-panel">
-                <section class="info-card">
-                    <div class="info-head">
-                        <h2>Züge</h2>
-                        <span id="moves-placeholder" class="muted">Noch keine Züge.</span>
-                    </div>
-                    <ol id="moves" class="moves" aria-live="polite"></ol>
-                </section>
-
-                <section class="info-card analysis">
-                    <div class="info-head">
-                        <h2>Analyse</h2>
-                    </div>
-                    <div id="analysis" class="analysis-stream" aria-live="polite">
-                        <div class="analysis-placeholder">Starte Stockfish, um Feedback zu erhalten.</div>
-                    </div>
-                </section>
-            </aside>
-        </main>
+    <!-- Loader (wird in chess.js sofort versteckt) -->
+    <div id="loader" style="position:fixed; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.65); color:#fff; z-index:9999;">
+        <div>Bitte warten…</div>
     </div>
 
-    <div id="toast-container" class="toast-container" aria-live="polite"></div>
-    <div id="loading-overlay" class="loading-overlay" hidden>
-        <div class="loading-dialog" role="alert" aria-live="assertive">
-            <div class="spinner"></div>
-            <span>Bitte warten …</span>
-        </div>
-    </div>
+    <!-- Header -->
+    <header class="chess-topbar">
+        <a class="brand-link" href="/menu/">CHESS.KO</a> <!-- klickbar -->
+        <div class="top-right"></div>
+    </header>
 
-    <template id="cell-tpl">
-        <div class="cell" role="gridcell" tabindex="-1">
-            <img class="piece" alt="" draggable="false" />
-            <div class="dot" aria-hidden="true"></div>
-        </div>
-    </template>
+    <!-- Layout (kein Scrollen) -->
+    <main class="page">
+        <!-- LINKS: Einstellungen -->
+        <section class="left">
+            <div class="panel settings">
+                <h3>Einstellungen</h3>
+
+                <div class="form-row">
+                    <label>Farbe:</label>
+                    <div class="chips">
+                        <label class="chip"><input type="radio" name="color" value="white" checked> Weiß</label>
+                        <label class="chip"><input type="radio" name="color" value="black"> Schwarz</label>
+                        <label class="chip"><input type="radio" name="color" value="auto"> Zufällig</label>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label>Bot-Stärke:</label>
+                    <div class="chips">
+                        <label class="chip"><input type="radio" name="elo" value="600" checked> 600</label>
+                        <label class="chip"><input type="radio" name="elo" value="1000"> 1000</label>
+                        <label class="chip"><input type="radio" name="elo" value="1400"> 1400</label>
+                        <label class="chip"><input type="radio" name="elo" value="1800"> 1800</label>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <label>Test:</label>
+                    <div class="chips">
+                        <button id="btn-test-start" class="chip" type="button">Start Test</button>
+                        <button id="btn-test-move" class="chip" type="button">Random Move</button>
+                        <button id="btn-test-reset" class="chip" type="button">Reset</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MITTE: Spieler – Brett – Spieler -->
+        <section class="center">
+            <div class="panel player">
+                <div class="avatar">👤</div>
+                <div>
+                    <div class="name">Spieler (Weiß)</div>
+                    <div class="bar"></div>
+                    <div class="meta">Elo 1000 · lvl. 1</div>
+                </div>
+                <div></div>
+            </div>
+
+            <div class="panel board-wrap" id="boardWrap">
+                <div class="board-shell" id="boardShell">
+                    <div id="board" aria-label="Schachbrett"></div>
+                </div>
+            </div>
+
+            <div class="panel player-bottom">
+                <div class="avatar">👤</div>
+                <div>
+                    <div class="name">Spieler (Weiß)</div>
+                    <div class="meta">Elo 1000 · lvl. 1</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <button id="btn-square" class="square-btn" aria-label="Aktion"></button>
+                    <div class="timer-line"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RECHTS: Zugliste + Button-Bar unten horizontal -->
+        <section class="right">
+            <div class="panel moves">
+                <ol id="moves"></ol>
+            </div>
+
+            <div class="actions-bar">
+                <button id="btn-undo" class="action" title="Rückgängig">↩️</button>
+                <button id="btn-resign" class="action" title="Aufgeben">⚡</button>
+                <button id="btn-hint" class="action" title="Hinweis">💬</button>
+                <button id="btn-options" class="action" title="Optionen">★</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- JS -->
+    <script defer src="chess.js"></script>
 </body>
 </html>

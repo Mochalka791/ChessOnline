@@ -1,0 +1,91 @@
+body {
+    overflow: hidden;
+}
+
+.auth {
+    position: relative;
+    z-index: 1;
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    padding: 120px 24px 48px;
+}
+
+.auth-card {
+    width: min(420px, 92%);
+    background: linear-gradient(180deg, color-mix(in oklab, var(--panel) 92%, black 8%), color-mix(in oklab, var(--panel) 78%, black 22%));
+    border: 1px solid color-mix(in oklab, var(--panel) 70%, white 6%);
+    border-radius: calc(var(--radius) + 4px);
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    box-shadow: 0 28px 60px rgba(0, 0, 0, .32);
+}
+
+.auth-head h1 {
+    margin: 0 0 6px;
+    font-size: clamp(26px, 4vw, 34px);
+}
+
+.auth-head p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.auth-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: color-mix(in oklab, var(--muted) 85%, white 15%);
+}
+
+.auth-form input {
+    background: color-mix(in oklab, var(--panel) 86%, black 14%);
+    border: 1px solid color-mix(in oklab, var(--panel) 65%, white 10%);
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: var(--text);
+    font: inherit;
+    outline: none;
+    transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.auth-form input:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--brand) 30%, transparent 70%);
+}
+
+.btn.full {
+    width: 100%;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.auth-foot {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.auth-foot a {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.auth-foot a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 520px) {
+    .auth-card {
+        padding: 26px;
+    }
+}

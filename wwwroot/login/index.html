@@ -1,0 +1,46 @@
+﻿<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anmelden</title>
+    <link rel="stylesheet" href="../menu/menu.css" />
+    <link rel="stylesheet" href="login.css" />
+</head>
+<body>
+    <canvas id="bg"></canvas>
+
+    <header class="topbar">
+        <div class="brand">ARCUDIS</div>
+        <nav class="actions"><a class="btn ghost" href="../menu/">Zurück</a></nav>
+    </header>
+
+    <main class="auth">
+        <section class="auth-card">
+            <header class="auth-head">
+                <h1>Anmelden</h1>
+                <p>Melde dich an, um deine Partien zu speichern.</p>
+            </header>
+
+            <form class="auth-form">
+                <label>
+                    <span>E-Mail</span>
+                    <input type="email" name="email" autocomplete="email" placeholder="name@example.com" />
+                </label>
+                <label>
+                    <span>Passwort</span>
+                    <input type="password" name="password" autocomplete="current-password" placeholder="••••••••" />
+                </label>
+
+                <button type="submit" class="btn solid full">Anmelden</button>
+            </form>
+
+            <footer class="auth-foot">
+                <p>Noch kein Konto? <a href="#registrieren">Jetzt registrieren</a></p>
+            </footer>
+        </section>
+    </main>
+
+    <script src="../js/bg.js"></script>
+</body>
+</html>

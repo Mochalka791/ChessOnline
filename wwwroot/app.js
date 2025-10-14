@@ -46,7 +46,7 @@ depthValue.textContent = settings.depth;
 // ---- SignalR ----
 const hasSignalR = typeof window.signalR !== 'undefined';
 const conn = hasSignalR
-    ? new signalR.HubConnectionBuilder().withUrl('/chess').withAutomaticReconnect().build()
+    ? new signalR.HubConnectionBuilder().withUrl('/hubs/chess').withAutomaticReconnect().build()
     : null;
 
 // ---- Helpers ----

@@ -314,7 +314,17 @@ themeToggle?.addEventListener('click', () => {
     themeToggle.textContent = settings.theme === 'dark' ? 'Helles Theme' : 'Dunkles Theme';
     persistSettings();
 });
-
 // start
-setView('lobby');
-if (!hasSignalR) { setStatusBanner('status-offline', 'Offline'); showToast('SignalR nicht gefunden. Online-Features aus.', 'warning'); }
+const hasLobby = !!document.getElementById('lobby-view');
+const hasChess = !!document.getElementById('chess-view');
+
+if (hasLobby && hasChess) {
+    setView('lobby');
+} else if (hasChess) {
+    setView('chess');
+}
+
+if (!hasSignalR) {
+    try { setStatusBanner('status-offline', 'Offline'); } catch { }
+    try { showToast('SignalR nicht gefunden. Online-Features aus.', 'warning'); } catch { }
+}

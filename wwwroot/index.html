@@ -3,127 +3,50 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Arcade Auswahl</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <!-- SignalR (Browser) -->
-    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@7.0.14/dist/browser/signalr.min.js" defer></script>
-    <script type="module" src="/app.js" defer></script>
+    <title>Arcade – Menü</title>
+    <link rel="stylesheet" href="/menu/menu.css" />
 </head>
 <body>
-    <noscript>
-        <div class="noscript-warning">Bitte JavaScript aktivieren, um die Arcade zu nutzen.</div>
-    </noscript>
+    <noscript><div class="noscript-warning">Bitte JavaScript aktivieren.</div></noscript>
 
-    <!-- LOBBY -->
-    <main id="lobby-view" class="lobby lobby-view" aria-labelledby="lobby-title">
+    <main class="lobby" aria-labelledby="lobby-title">
         <header class="lobby-hero">
             <div>
                 <p class="eyebrow">Arcade</p>
                 <h1 id="lobby-title">Wähle dein Spiel</h1>
-                <p class="subline">Starte mit Schach oder bleibe dran für Snake, Tetris und weitere Klassiker.</p>
+                <p class="subline">Spiele Schach gegen Freunde oder den Bot. Snake und Tetris folgen.</p>
             </div>
-            <button id="open-chess" class="cta primary" type="button">Jetzt Schach spielen</button>
+            <a class="cta primary" href="/chess/index.html">Jetzt Schach spielen</a>
         </header>
 
         <section class="game-grid" role="list">
-            <article class="game-card" role="listitem">
-                <header>
-                    <h2>Schach</h2>
+            <article class="game-card" role="listitem" aria-labelledby="card-chess">
+                <header style="display:flex;align-items:center;gap:.6rem;">
+                    <h2 id="card-chess" style="margin:0;">Schach</h2>
                     <span class="badge live">Verfügbar</span>
                 </header>
                 <p>Analysiere Partien, spiele online oder fordere den Stockfish-Bot heraus.</p>
-                <button class="cta secondary" data-game="chess" type="button">Öffnen</button>
+                <a class="cta secondary" href="/chess/index.html">Öffnen</a>
             </article>
 
             <article class="game-card disabled" role="listitem" aria-disabled="true">
-                <header>
-                    <h2>Snake</h2>
+                <header style="display:flex;align-items:center;gap:.6rem;">
+                    <h2 style="margin:0;">Snake</h2>
                     <span class="badge soon">Bald</span>
                 </header>
-                <p>Füttere die Schlange und knacke den Highscore – Update folgt.</p>
-                <button class="cta" type="button" disabled>Nicht verfügbar</button>
+                <p>Update folgt.</p>
+                <button class="cta secondary" type="button" disabled>Nicht verfügbar</button>
             </article>
 
             <article class="game-card disabled" role="listitem" aria-disabled="true">
-                <header>
-                    <h2>Tetris</h2>
+                <header style="display:flex;align-items:center;gap:.6rem;">
+                    <h2 style="margin:0;">Tetris</h2>
                     <span class="badge soon">Bald</span>
                 </header>
-                <p>Staple Tetrominos mit smoothen Animationen und Soundeffekten.</p>
-                <button class="cta" type="button" disabled>Nicht verfügbar</button>
+                <p>Update folgt.</p>
+                <button class="cta secondary" type="button" disabled>Nicht verfügbar</button>
             </article>
         </section>
     </main>
-
-    <!-- CHESS -->
-    <main id="chess-view" class="chess hidden" aria-labelledby="chess-title">
-        <header class="topbar">
-            <button id="back-to-lobby" class="link" type="button">&larr; Zurück</button>
-            <h1 id="chess-title">ChessOnline</h1>
-            <div id="status-banner" class="status status-offline">Offline</div>
-        </header>
-
-        <section class="controls">
-            <form id="join-form" onsubmit="return false;">
-                <label>Raum: <input id="room" type="text" value="testroom" /></label>
-                <label>Name: <input id="name" type="text" value="Viktor" /></label>
-                <label>
-                    Seite:
-                    <select id="side">
-                        <option value="auto">Auto</option>
-                        <option value="white">Weiß</option>
-                        <option value="black">Schwarz</option>
-                    </select>
-                </label>
-                <label>ELO Bot: <input id="elo" type="number" min="50" max="3000" value="1000" /></label>
-                <button id="join" class="cta" type="button">Online beitreten</button>
-                <button id="join-bot" class="cta secondary" type="button">Gegen Bot</button>
-            </form>
-
-            <div class="analysis-controls">
-                <label>
-                    Tiefe: <input id="depth" type="number" min="5" max="30" value="14" />
-                    <span id="depth-value">14</span>
-                </label>
-                <button id="local-analysis" class="cta tertiary" type="button">Lokale Analyse</button>
-                <button id="theme-toggle" class="cta tertiary" type="button">Dunkles Theme</button>
-            </div>
-        </section>
-
-        <section class="board-wrap">
-            <div id="board-badge" class="board-badge" hidden>Vorschau</div>
-            <div id="board" class="board" role="grid" aria-label="Schachbrett"></div>
-            <template id="cell-tpl">
-                <div class="cell" role="gridcell" draggable="false">
-                    <img class="piece" alt="" draggable="false" />
-                </div>
-            </template>
-        </section>
-
-        <aside class="sidebar">
-            <div id="players" class="players">Weiß: Weiß • Schwarz: Schwarz</div>
-            <div id="clocks" class="clocks">
-                <span>Weiß: <b id="clock-white">05:00</b></span>
-                <span>Schwarz: <b id="clock-black">05:00</b></span>
-            </div>
-
-            <h3>Züge</h3>
-            <ol id="moves" class="moves"></ol>
-            <div id="moves-placeholder" class="muted">Noch keine Züge.</div>
-
-            <h3>Analyse</h3>
-            <div id="analysis" class="analysis">
-                <div class="analysis-placeholder muted">Drücke „Lokale Analyse“ nach einem Zug.</div>
-            </div>
-
-            <div class="share">
-                <button id="copy-pgn" class="cta tertiary" type="button">PGN kopieren</button>
-                <button id="copy-fen" class="cta tertiary" type="button">FEN kopieren</button>
-            </div>
-        </aside>
-    </main>
-
-    <div id="toast-container" class="toasts"></div>
-    <div id="loading-overlay" class="loading-overlay" hidden>Bitte warten…</div>
 </body>
 </html>

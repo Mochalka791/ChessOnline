@@ -18,9 +18,27 @@ const statusLog = document.getElementById('status-log');
 const toastContainer = document.getElementById('toast-container');
 const loadingOverlay = document.getElementById('loading-overlay');
 const themeToggle = document.getElementById('theme-toggle');
+const promotionOverlay = document.getElementById('promotion-overlay');
+const promotionChoices = promotionOverlay ? Array.from(promotionOverlay.querySelectorAll('.promotion-choice')) : [];
+const promotionCancelBtn = document.getElementById('promotion-cancel');
+
+const PROMOTION_NAMES = {
+    queen: 'Dame',
+    rook: 'Turm',
+    bishop: 'Läufer',
+    knight: 'Springer'
+};
+
+const PROMOTION_KEY_MAP = {
+    q: 'queen', Q: 'queen', '1': 'queen',
+    r: 'rook', R: 'rook', '2': 'rook',
+    b: 'bishop', B: 'bishop', '3': 'bishop',
+    n: 'knight', N: 'knight', '4': 'knight'
+};
 
 const STORAGE_KEY = 'arcade.settings.v1';
 const DEFAULT_SETTINGS = { depth: 14, elo: 1000, theme: 'light' };
+const CONNECTION_TIMEOUT_MS = 8000;
 
 function loadSettings() {
     try {
@@ -93,6 +111,8 @@ let analysisController = null;
 let dragSource = null;
 let dragPieceEl = null;
 let dragHoverIndex = null;
+let promotionResolver = null;
+let promotionRejecter = null;
 
 const boardCells = [];
 if (boardEl && cellTpl) {
@@ -150,6 +170,63 @@ function showToast(message, type = 'info', duration = 4000) {
     }, duration);
 }
 
+function closePromotionDialog() {
+    if (!promotionOverlay) return;
+    promotionOverlay.hidden = true;
+    promotionOverlay.dataset.color = '';
+}
+
+function resolvePromotion(piece) {
+    if (!promotionResolver) return;
+    const resolver = promotionResolver;
+    promotionResolver = null;
+    promotionRejecter = null;
+    closePromotionDialog();
+    resolver(piece);
+}
+
+function cancelPromotionDialog() {
+    if (!promotionOverlay || promotionOverlay.hidden) return;
+    closePromotionDialog();
+    if (promotionRejecter) {
+        const rejecter = promotionRejecter;
+        promotionResolver = null;
+        promotionRejecter = null;
+        rejecter(new Error('Promotion cancelled'));
+    }
+}
+
+function promptPromotion(color) {
+    if (!promotionOverlay) return Promise.resolve('queen');
+
+    if (promotionResolver || promotionRejecter) {
+        promotionResolver = null;
+        promotionRejecter?.(new Error('Promotion interrupted'));
+        promotionRejecter = null;
+    }
+
+    const prefix = color === 'black' ? 'b' : 'w';
+    promotionOverlay.hidden = false;
+    promotionOverlay.dataset.color = color;
+
+    for (const choice of promotionChoices) {
+        const piece = choice.dataset.piece;
+        const img = choice.querySelector('img');
+        if (!piece || !img) continue;
+        const code = `${prefix}_${piece}`;
+        const src = pieceSrc(code);
+        if (src) img.src = src;
+        img.alt = `${color === 'black' ? 'Schwarzer' : 'Weißer'} ${PROMOTION_NAMES[piece] ?? piece}`;
+    }
+
+    setTimeout(() => promotionChoices[0]?.focus(), 0);
+
+    return new Promise((resolve, reject) => {
+        promotionResolver = resolve;
+        promotionRejecter = reject;
+    });
+}
+
 function logStatus(message) {
     if (!statusLog) return;
     const entry = document.createElement('p');
@@ -161,7 +238,7 @@ function logStatus(message) {
 
 function setStatusBanner(mode, text) {
     if (!statusBanner) return;
-    statusBanner.className = `status-badge ${mode}`;
+    statusBanner.className = `status-pill ${mode}`;
     statusBanner.textContent = text;
 }
 
@@ -326,12 +403,40 @@ function pushPostGameSummary(summary) {
     trimAnalysisCards(5);
 }
 
-function ensureConnected() {
+function ensureConnected(timeout = CONNECTION_TIMEOUT_MS) {
     if (!hasSignalR) {
         return Promise.reject(new Error('Echtzeit-Verbindung nicht verfügbar.'));
     }
     if (conn.state === HubConnectionState.Disconnected) {
-        return conn.start();
+        const startPromise = conn.start();
+        if (!Number.isFinite(timeout) || timeout <= 0) {
+            return startPromise;
+        }
+        return new Promise((resolve, reject) => {
+            let settled = false;
+            const timer = setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                if (conn.state !== HubConnectionState.Connected) {
+                    conn.stop().catch(() => {});
+                }
+                reject(new Error('Verbindung konnte nicht aufgebaut werden. Bitte versuche es später erneut.'));
+            }, timeout);
+
+            startPromise
+                .then((value) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    resolve(value);
+                })
+                .catch((err) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    reject(err);
+                });
+        });
     }
     return Promise.resolve();
 }
@@ -483,7 +588,7 @@ function onCellDragLeave(cell) {
     dragHoverIndex = null;
 }
 
-function onCellDrop(evt, x, y) {
+async function onCellDrop(evt, x, y) {
     if (!dragSource) return;
     evt.preventDefault();
 
@@ -497,8 +602,11 @@ function onCellDrop(evt, x, y) {
 
     const move = legalMoves.find(m => m.tx === x && m.ty === y);
     if (move) {
-        makeMove(fx, fy, x, y);
-        clearSelection();
+        const moved = await performMove(fx, fy, x, y, move);
+        if (!moved) {
+            const idx = fy * 8 + fx;
+            boardCells[idx]?.classList.add('selected');
+        }
     } else {
         const idx = fy * 8 + fx;
         boardCells[idx]?.classList.add('invalid');
@@ -516,7 +624,7 @@ function canControlPiece(code) {
     return false;
 }
 
-function onCellClick(x, y) {
+async function onCellClick(x, y) {
     if (preview) {
         preview = null;
         renderLiveBoard();
@@ -532,8 +640,7 @@ function onCellClick(x, y) {
     if (selected) {
         const target = legalMoves.find(m => m.tx === x && m.ty === y);
         if (target) {
-            makeMove(selected.x, selected.y, x, y);
-            clearSelection();
+            await performMove(selected.x, selected.y, x, y, target);
             return;
         }
     }
@@ -716,16 +823,41 @@ function togglePreview(item, li) {
     if (boardBadge) boardBadge.hidden = true;
 }
 
-async function makeMove(fx, fy, tx, ty) {
-    if (!roomId) return;
+async function performMove(fx, fy, tx, ty, moveMeta) {
+    let promotion = null;
+    if (moveMeta?.promotion) {
+        const code = boardMatrix[fx]?.[fy] ?? '.';
+        const color = code.startsWith('b_') ? 'black' : 'white';
+        try {
+            promotion = await promptPromotion(color);
+        } catch {
+            drawMoveHints(legalMoves);
+            return false;
+        }
+    }
+
+    const ok = await makeMove(fx, fy, tx, ty, promotion);
+    if (!ok) {
+        drawMoveHints(legalMoves);
+        return false;
+    }
+
+    clearSelection();
+    return true;
+}
+
+async function makeMove(fx, fy, tx, ty, promotion = null) {
+    if (!roomId) return false;
     try {
-        await conn.invoke('MakeMove', roomId, fx, fy, tx, ty, null);
+        await conn.invoke('MakeMove', roomId, fx, fy, tx, ty, promotion);
+        return true;
     } catch (err) {
         const idx = fy * 8 + fx;
         boardCells[idx]?.classList.add('invalid');
         setTimeout(() => boardCells[idx]?.classList.remove('invalid'), 500);
         const message = err instanceof Error ? err.message : String(err);
         showToast(`Zug fehlgeschlagen: ${message}`, 'error');
+        return false;
     }
 }
 
@@ -754,7 +886,7 @@ async function joinGame(vsBot) {
         const message = err instanceof Error ? err.message : String(err);
         showToast(`Beitritt fehlgeschlagen: ${message}`, 'error');
         logStatus(`Fehler beim Beitritt: ${message}`);
-        setStatusBanner('status-offline', 'Offline');
+        setStatusBanner('status-offline', 'Getrennt');
     } finally {
         showLoading(false);
     }
@@ -823,6 +955,7 @@ conn.on('Init', (st, seat) => {
     state = st;
     mySeat = seat;
     preview = null;
+    cancelPromotionDialog();
     if (boardBadge) {
         boardBadge.hidden = true;
         delete boardBadge.dataset.locked;
@@ -838,6 +971,7 @@ conn.on('Init', (st, seat) => {
 
 conn.on('State', (st) => {
     state = st;
+    cancelPromotionDialog();
     if (!preview) renderLiveBoard();
     whiteBase = st.whiteMs;
     blackBase = st.blackMs;
@@ -869,7 +1003,7 @@ conn.on('GameOver', (message, summary) => {
 });
 
 conn.onclose(() => {
-    setStatusBanner('status-offline', 'Offline');
+    setStatusBanner('status-offline', 'Getrennt');
     logStatus('Verbindung getrennt.');
 });
 
@@ -891,6 +1025,28 @@ conn.onreconnected(async () => {
             logStatus(`Wiederbeitritt fehlgeschlagen: ${message}`);
         }
     }
+});
+
+if (promotionOverlay) {
+    promotionOverlay.addEventListener('click', (evt) => {
+        if (evt.target === promotionOverlay) {
+            evt.preventDefault();
+            cancelPromotionDialog();
+        }
+    });
+}
+
+for (const choice of promotionChoices) {
+    choice.addEventListener('click', (evt) => {
+        evt.preventDefault();
+        const piece = choice.dataset.piece ?? 'queen';
+        resolvePromotion(piece);
+    });
+}
+
+promotionCancelBtn?.addEventListener('click', (evt) => {
+    evt.preventDefault();
+    cancelPromotionDialog();
 });
 
 document.getElementById('join-bot')?.addEventListener('click', () => joinGame(true));
@@ -966,6 +1122,22 @@ if (themeToggle) {
 }
 
 window.addEventListener('keydown', (evt) => {
+    if (!evt) return;
+
+    if (promotionOverlay && !promotionOverlay.hidden) {
+        if (evt.key === 'Escape') {
+            evt.preventDefault();
+            cancelPromotionDialog();
+            return;
+        }
+        const mapped = PROMOTION_KEY_MAP[evt.key];
+        if (mapped) {
+            evt.preventDefault();
+            resolvePromotion(mapped);
+        }
+        return;
+    }
+
     if (evt.target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(evt.target.tagName)) return;
     if (evt.key === 'a' || evt.key === 'A') {
         evt.preventDefault();
@@ -987,7 +1159,7 @@ if (!hasSignalR) {
     logStatus('SignalR-Bibliothek konnte nicht geladen werden. Online-Modus deaktiviert.');
     showToast('Live-Verbindung nicht verfügbar – Online-Funktionen sind eingeschränkt.', 'warning');
 }
-setStatusBanner('status-offline', 'Offline');
+setStatusBanner('status-ready', 'Bereit');
 renderHistory([]);
 resetAnalysis();
 updateTurnLabel('white');

@@ -32,9 +32,10 @@ body {
 .chess-topbar {
     position: sticky;
     top: 0;
-    display: grid;
-    grid-template-columns: 220px 1fr 220px;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 16px;
     padding: 18px clamp(20px, 6vw, 48px);
     background: color-mix(in oklab, var(--panel) 85%, black 15%);
@@ -48,6 +49,14 @@ body {
     font-size: clamp(20px, 4vw, 28px);
     letter-spacing: 0.3em;
     font-weight: 800;
+    color: var(--text);
+    text-decoration: none;
+    transition: color 150ms ease;
+}
+
+.chess-topbar .brand:focus-visible,
+.chess-topbar .brand:hover {
+    color: var(--brand);
 }
 
 .status-pill {
@@ -66,6 +75,11 @@ body {
     color: var(--brand);
 }
 
+.status-pill.status-ready {
+    color: #a5f3fc;
+    border-color: rgba(45, 212, 191, 0.35);
+}
+
 .status-pill.status-offline {
     color: #fca5a5;
     border-color: rgba(248, 113, 113, 0.4);
@@ -81,10 +95,6 @@ body {
     border-color: rgba(96, 165, 250, 0.5);
 }
 
-.top-actions {
-    justify-self: end;
-}
-
 .btn.full {
     width: 100%;
     justify-content: center;
@@ -92,7 +102,7 @@ body {
 
 .chess-grid {
     display: grid;
-    grid-template-columns: 260px minmax(640px, 1fr) 340px;
+    grid-template-columns: clamp(220px, 22vw, 260px) minmax(320px, 1fr) clamp(260px, 26vw, 340px);
     gap: 20px;
     padding: 32px clamp(20px, 6vw, 48px);
     align-items: start;
@@ -304,12 +314,14 @@ body {
 
 .board-panel {
     padding: 16px;
+    display: flex;
+    justify-content: center;
 }
 
 .board-shell {
     position: relative;
     aspect-ratio: 1;
-    width: 100%;
+    width: min(100%, clamp(320px, 62vh, 560px));
     border: 6px solid black;
     background: color-mix(in oklab, var(--panel) 65%, black 35%);
     overflow: hidden;
@@ -634,13 +646,13 @@ body {
 
 @media (max-width: 768px) {
     .chess-topbar {
-        grid-template-columns: 1fr;
-        justify-items: center;
+        flex-direction: column;
+        justify-content: center;
         text-align: center;
     }
 
-    .top-actions {
-        justify-self: center;
+    .status-pill {
+        align-self: center;
     }
 
     .player-card {

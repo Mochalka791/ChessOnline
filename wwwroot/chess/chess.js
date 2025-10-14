@@ -21,6 +21,7 @@ const themeToggle = document.getElementById('theme-toggle');
 
 const STORAGE_KEY = 'arcade.settings.v1';
 const DEFAULT_SETTINGS = { depth: 14, elo: 1000, theme: 'light' };
+const CONNECTION_TIMEOUT_MS = 8000;
 
 function loadSettings() {
     try {
@@ -161,7 +162,7 @@ function logStatus(message) {
 
 function setStatusBanner(mode, text) {
     if (!statusBanner) return;
-    statusBanner.className = `status-badge ${mode}`;
+    statusBanner.className = `status-pill ${mode}`;
     statusBanner.textContent = text;
 }
 
@@ -326,12 +327,40 @@ function pushPostGameSummary(summary) {
     trimAnalysisCards(5);
 }
 
-function ensureConnected() {
+function ensureConnected(timeout = CONNECTION_TIMEOUT_MS) {
     if (!hasSignalR) {
         return Promise.reject(new Error('Echtzeit-Verbindung nicht verfügbar.'));
     }
     if (conn.state === HubConnectionState.Disconnected) {
-        return conn.start();
+        const startPromise = conn.start();
+        if (!Number.isFinite(timeout) || timeout <= 0) {
+            return startPromise;
+        }
+        return new Promise((resolve, reject) => {
+            let settled = false;
+            const timer = setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                if (conn.state !== HubConnectionState.Connected) {
+                    conn.stop().catch(() => {});
+                }
+                reject(new Error('Verbindung konnte nicht aufgebaut werden. Bitte versuche es später erneut.'));
+            }, timeout);
+
+            startPromise
+                .then((value) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    resolve(value);
+                })
+                .catch((err) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    reject(err);
+                });
+        });
     }
     return Promise.resolve();
 }
@@ -754,7 +783,7 @@ async function joinGame(vsBot) {
         const message = err instanceof Error ? err.message : String(err);
         showToast(`Beitritt fehlgeschlagen: ${message}`, 'error');
         logStatus(`Fehler beim Beitritt: ${message}`);
-        setStatusBanner('status-offline', 'Offline');
+        setStatusBanner('status-offline', 'Getrennt');
     } finally {
         showLoading(false);
     }
@@ -869,7 +898,7 @@ conn.on('GameOver', (message, summary) => {
 });
 
 conn.onclose(() => {
-    setStatusBanner('status-offline', 'Offline');
+    setStatusBanner('status-offline', 'Getrennt');
     logStatus('Verbindung getrennt.');
 });
 
@@ -987,7 +1016,7 @@ if (!hasSignalR) {
     logStatus('SignalR-Bibliothek konnte nicht geladen werden. Online-Modus deaktiviert.');
     showToast('Live-Verbindung nicht verfügbar – Online-Funktionen sind eingeschränkt.', 'warning');
 }
-setStatusBanner('status-offline', 'Offline');
+setStatusBanner('status-ready', 'Bereit');
 renderHistory([]);
 resetAnalysis();
 updateTurnLabel('white');

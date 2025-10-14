@@ -297,10 +297,44 @@
     <script defer src="chess.js"></script>
 </head>
 <body>
-    <!-- Loader (wird in chess.js sofort versteckt) -->
-    <div id="loader" style="position:fixed; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.65); color:#fff; z-index:9999;">
-        <div>Bitte warten…</div>
-    </div>
+    <canvas id="bg" aria-hidden="true"></canvas>
+
+    <div class="chess-app">
+        <header class="chess-topbar">
+            <a class="brand" href="/">CHESS.KO</a>
+            <div id="status-banner" class="status-pill status-ready" role="status">Bereit</div>
+        </header>
+
+        <main class="chess-grid" aria-label="Schachoberfläche">
+            <aside class="panel menu-panel">
+                <h2 class="panel-title">Menü</h2>
+                <form class="menu-form" autocomplete="off">
+                    <label class="field">
+                        <span>Raum</span>
+                        <input id="room" type="text" value="testroom" />
+                    </label>
+                    <label class="field">
+                        <span>Name</span>
+                        <input id="name" type="text" value="Spieler" />
+                    </label>
+                    <label class="field">
+                        <span>Seite</span>
+                        <select id="side">
+                            <option value="auto">Automatisch</option>
+                            <option value="white">Weiß</option>
+                            <option value="black">Schwarz</option>
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Bot-ELO <strong id="elo-value">1000</strong></span>
+                        <input id="elo" type="range" min="400" max="3200" step="50" value="1000" />
+                    </label>
+                </form>
+
+                <div class="menu-actions">
+                    <button id="join" type="button" class="btn solid full">Online beitreten</button>
+                    <button id="join-bot" type="button" class="btn ghost full">Gegen Bot</button>
+                </div>
 
     <!-- Header -->
     <header class="chess-topbar">
@@ -391,7 +425,37 @@
         </section>
     </main>
 
-    <!-- JS -->
-    <script defer src="chess.js"></script>
+    <div id="promotion-overlay" class="promotion-overlay" hidden>
+        <div class="promotion-dialog" role="dialog" aria-modal="true" aria-labelledby="promotion-title">
+            <h2 id="promotion-title">Umwandlung</h2>
+            <p class="promotion-subtitle">Wähle eine Figur für deinen Bauern.</p>
+            <div class="promotion-choices" role="list">
+                <button type="button" class="promotion-choice" data-piece="queen">
+                    <img alt="" />
+                    <span>Dame</span>
+                </button>
+                <button type="button" class="promotion-choice" data-piece="rook">
+                    <img alt="" />
+                    <span>Turm</span>
+                </button>
+                <button type="button" class="promotion-choice" data-piece="bishop">
+                    <img alt="" />
+                    <span>Läufer</span>
+                </button>
+                <button type="button" class="promotion-choice" data-piece="knight">
+                    <img alt="" />
+                    <span>Springer</span>
+                </button>
+            </div>
+            <button type="button" id="promotion-cancel" class="btn ghost small">Abbrechen</button>
+        </div>
+    </div>
+
+    <template id="cell-tpl">
+        <div class="cell" role="gridcell" tabindex="-1">
+            <img class="piece" alt="" draggable="false" />
+            <div class="dot" aria-hidden="true"></div>
+        </div>
+    </template>
 </body>
 </html>

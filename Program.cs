@@ -23,7 +23,7 @@ app.Use(async (context, next) =>
 {
     if (context.Request.Path == "/")
     {
-        context.Response.Redirect("/menu/");
+        context.Response.Redirect("/menu");
         return;
     }
 

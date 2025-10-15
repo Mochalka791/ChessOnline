@@ -1,0 +1,77 @@
+:global(body) {
+    margin: 0;
+    font: 500 16px/1.45 "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0b1322;
+    color: #e9f1ff;
+}
+
+.layout-root {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    background: radial-gradient(circle at top right, rgba(65, 212, 131, 0.08), transparent 60%), #0b1322;
+}
+
+.layout-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    background: color-mix(in oklab, #111a2b 85%, black 15%);
+    border-bottom: 1px solid color-mix(in oklab, #111a2b 70%, white 6%);
+    backdrop-filter: blur(6px);
+}
+
+.brand {
+    font-weight: 800;
+    letter-spacing: 0.24rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.topbar-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.action {
+    text-decoration: none;
+    color: inherit;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, #41d483 35%, white 10%);
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.action:hover {
+    border-color: #41d483;
+    box-shadow: 0 0 0 4px rgba(65, 212, 131, 0.2);
+}
+
+.layout-body {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: clamp(16px, 4vw, 32px);
+}
+
+.not-found {
+    margin: auto;
+    max-width: 480px;
+    text-align: center;
+    background: color-mix(in oklab, #111a2b 90%, black 10%);
+    padding: 32px;
+    border-radius: 20px;
+    border: 1px solid color-mix(in oklab, #111a2b 65%, white 8%);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.not-found a {
+    color: #41d483;
+    font-weight: 600;
+}

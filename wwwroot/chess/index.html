@@ -451,6 +451,32 @@
         </div>
     </div>
 
+    <div id="promotion-overlay" class="promotion-overlay" hidden>
+        <div class="promotion-dialog" role="dialog" aria-modal="true" aria-labelledby="promotion-title">
+            <h2 id="promotion-title">Umwandlung</h2>
+            <p class="promotion-subtitle">Wähle eine Figur für deinen Bauern.</p>
+            <div class="promotion-choices" role="list">
+                <button type="button" class="promotion-choice" data-piece="queen">
+                    <img alt="" />
+                    <span>Dame</span>
+                </button>
+                <button type="button" class="promotion-choice" data-piece="rook">
+                    <img alt="" />
+                    <span>Turm</span>
+                </button>
+                <button type="button" class="promotion-choice" data-piece="bishop">
+                    <img alt="" />
+                    <span>Läufer</span>
+                </button>
+                <button type="button" class="promotion-choice" data-piece="knight">
+                    <img alt="" />
+                    <span>Springer</span>
+                </button>
+            </div>
+            <button type="button" id="promotion-cancel" class="btn ghost small">Abbrechen</button>
+        </div>
+    </div>
+
     <template id="cell-tpl">
         <div class="cell" role="gridcell" tabindex="-1">
             <img class="piece" alt="" draggable="false" />

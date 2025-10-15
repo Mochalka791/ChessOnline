@@ -1,4 +1,5 @@
-﻿using ChessOnline;
+using ChessOnline;
+using ChessOnline.Components;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
@@ -13,6 +14,8 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<IGameStore, InMemoryGameStore>();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<StockfishEngine>(); // lokaler Stockfish
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
 
 var app = builder.Build();
 
@@ -20,7 +23,7 @@ app.Use(async (context, next) =>
 {
     if (context.Request.Path == "/")
     {
-        context.Response.Redirect("/menu/");
+        context.Response.Redirect("/menu");
         return;
     }
 
@@ -29,6 +32,9 @@ app.Use(async (context, next) =>
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 
 // SignalR-Hub
 app.MapHub<ChessHub>("/hubs/chess");

@@ -1,4 +1,9 @@
-﻿(() => {
+(() => {
+    if (window.__arcadeBgInitialized) {
+        return;
+    }
+    window.__arcadeBgInitialized = true;
+
     const c = document.getElementById('bg');
     const x = c.getContext('2d');
     let w, h, dpr, pts = [], mx = 0, my = 0;

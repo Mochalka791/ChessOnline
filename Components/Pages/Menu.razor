@@ -1,0 +1,77 @@
+@page "/menu"
+@page "/menu/"
+@layout null
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<PageTitle>Arcade • Home</PageTitle>
+
+<canvas id="bg"></canvas>
+
+<header class="topbar">
+    <div class="brand">ARCUDIS</div>
+    <nav class="actions">
+        <a class="btn ghost" href="/login/">Anmelden</a>
+    </nav>
+</header>
+
+<main class="home">
+    <section class="hero">
+        <h1>Arcade</h1>
+        <p>Wähle dein Spiel</p>
+    </section>
+
+    <section class="grid">
+        <a class="card glow" href="/chess/">
+            <div class="thumb chess"></div>
+            <div class="card-body">
+                <h2>Schach <span class="tag ok">VERFÜGBAR</span></h2>
+                <p>Analysiere Partien, spiele online oder fordere den Stockfish-Bot heraus.</p>
+                <span class="btn solid">Öffnen</span>
+            </div>
+        </a>
+
+        <a class="card glow" href="/snake">
+            <div class="thumb snake"></div>
+            <div class="card-body">
+                <h2>Snake <span class="tag ok">VERFÜGBAR</span></h2>
+                <p>Steuere die Schlange durch die Arena – komplett in C# umgesetzt.</p>
+                <span class="btn solid">Öffnen</span>
+            </div>
+        </a>
+
+        <a class="card glow" href="/tetris/">
+            <div class="thumb tetris"></div>
+            <div class="card-body">
+                <h2>Tetris <span class="tag ok">VERFÜGBAR</span></h2>
+                <p>Lass die Steine fallen, räume Reihen ab und knacke deinen Highscore.</p>
+                <span class="btn solid">Öffnen</span>
+            </div>
+        </a>
+    </section>
+</main>
+
+<script src="/js/bg.js"></script>
+
+@code {
+    private IJSObjectReference? _module;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "/js/arcadeHome.js");
+            await _module.InvokeVoidAsync("setBodyClass", true);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null)
+        {
+            await _module.InvokeVoidAsync("setBodyClass", false);
+            await _module.DisposeAsync();
+        }
+    }
+}

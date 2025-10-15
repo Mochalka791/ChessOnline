@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Arcudis • Tetris</title>
+    <link rel="stylesheet" href="../menu/menu.css" />
+    <link rel="stylesheet" href="tetris.css" />
+</head>
+<body>
+    <canvas id="bg" aria-hidden="true"></canvas>
+
+    <header class="topbar">
+        <a class="brand" href="/">ARCUDIS</a>
+        <nav class="actions">
+            <button id="pause" class="btn solid" type="button">Pause</button>
+            <button id="restart" class="btn ghost" type="button">Neu starten</button>
+        </nav>
+    </header>
+
+    <main class="tetris-app" aria-label="Tetris Oberfläche">
+        <section class="playfield panel" aria-live="polite">
+            <header class="panel-head">
+                <h1>Tetris</h1>
+                <p class="muted">Bewege die Steine mit den Pfeiltasten, drehe mit Q/E oder Pfeil nach oben und lasse mit Leertaste fallen.</p>
+            </header>
+
+            <div class="board-shell" role="application" aria-describedby="controls">
+                <div id="board" class="board" role="grid" aria-label="Tetris Spielfeld"></div>
+                <div id="message" class="overlay" hidden></div>
+            </div>
+
+            <footer class="panel-footer" id="controls">
+                <dl class="stats">
+                    <div>
+                        <dt>Score</dt>
+                        <dd id="score">0</dd>
+                    </div>
+                    <div>
+                        <dt>Level</dt>
+                        <dd id="level">1</dd>
+                    </div>
+                    <div>
+                        <dt>Linien</dt>
+                        <dd id="lines">0</dd>
+                    </div>
+                    <div>
+                        <dt>Status</dt>
+                        <dd id="status">Bereit</dd>
+                    </div>
+                </dl>
+            </footer>
+        </section>
+
+        <aside class="sidebar panel">
+            <section class="next-box">
+                <h2>Nächste Steine</h2>
+                <div id="queue" class="queue" aria-live="polite"></div>
+            </section>
+
+            <section class="help-box">
+                <h2>Steuerung</h2>
+                <ul>
+                    <li><kbd>←</kbd>/<kbd>→</kbd> – Verschieben</li>
+                    <li><kbd>↓</kbd> – Schneller fallen lassen</li>
+                    <li><kbd>Q</kbd>/<kbd>E</kbd> oder <kbd>↑</kbd> – Drehen</li>
+                    <li><kbd>Leertaste</kbd> – Hard Drop</li>
+                    <li><kbd>P</kbd> – Pause</li>
+                    <li><kbd>R</kbd> – Neustarten</li>
+                </ul>
+            </section>
+        </aside>
+    </main>
+
+    <script src="../js/bg.js"></script>
+    <script src="tetris.js" type="module"></script>
+</body>
+</html>

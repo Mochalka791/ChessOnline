@@ -23,32 +23,23 @@
     </section>
 
     <section class="grid">
-        <a class="card glow" href="/chess/">
-            <div class="thumb chess"></div>
-            <div class="card-body">
-                <h2>Schach <span class="tag ok">VERFÜGBAR</span></h2>
-                <p>Analysiere Partien, spiele online oder fordere den Stockfish-Bot heraus.</p>
-                <span class="btn solid">Öffnen</span>
-            </div>
-        </a>
-
-        <a class="card glow" href="/snake">
-            <div class="thumb snake"></div>
-            <div class="card-body">
-                <h2>Snake <span class="tag ok">VERFÜGBAR</span></h2>
-                <p>Steuere die Schlange durch die Arena – komplett in C# umgesetzt.</p>
-                <span class="btn solid">Öffnen</span>
-            </div>
-        </a>
-
-        <a class="card glow" href="/tetris/">
-            <div class="thumb tetris"></div>
-            <div class="card-body">
-                <h2>Tetris <span class="tag ok">VERFÜGBAR</span></h2>
-                <p>Lass die Steine fallen, räume Reihen ab und knacke deinen Highscore.</p>
-                <span class="btn solid">Öffnen</span>
-            </div>
-        </a>
+        @foreach (var game in Games)
+        {
+            <a class="@GetCardClasses(game)" href="@game.Href">
+                <div class="thumb @game.ThumbClass"></div>
+                <div class="card-body">
+                    <h2>
+                        @game.Title
+                        @if (!string.IsNullOrWhiteSpace(game.StatusLabel))
+                        {
+                            <span class="tag @game.StatusClass">@game.StatusLabel</span>
+                        }
+                    </h2>
+                    <p>@game.Description</p>
+                    <span class="btn solid">@game.ButtonLabel</span>
+                </div>
+            </a>
+        }
     </section>
 </main>
 
@@ -56,6 +47,24 @@
 
 @code {
     private IJSObjectReference? _module;
+    private static readonly IReadOnlyList<GameCard> Games = new[]
+    {
+        new GameCard(
+            Title: "Schach",
+            Href: "/chess/",
+            Description: "Analysiere Partien, spiele online oder fordere den Stockfish-Bot heraus.",
+            ThumbClass: "chess"),
+        new GameCard(
+            Title: "Snake",
+            Href: "/snake",
+            Description: "Steuere die Schlange durch die Arena – komplett in C# umgesetzt.",
+            ThumbClass: "snake"),
+        new GameCard(
+            Title: "Tetris",
+            Href: "/tetris/",
+            Description: "Lass die Steine fallen, räume Reihen ab und knacke deinen Highscore.",
+            ThumbClass: "tetris")
+    };
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -74,4 +83,17 @@
             await _module.DisposeAsync();
         }
     }
+
+    private static string GetCardClasses(GameCard game)
+        => game.Highlight ? "card glow" : "card";
+
+    private sealed record GameCard(
+        string Title,
+        string Href,
+        string Description,
+        string ThumbClass,
+        string ButtonLabel = "Öffnen",
+        string StatusLabel = "VERFÜGBAR",
+        string StatusClass = "ok",
+        bool Highlight = true);
 }

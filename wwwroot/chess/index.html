@@ -14,11 +14,8 @@
 
     <div class="chess-app">
         <header class="chess-topbar">
-            <div class="brand">CHESS.KO</div>
-            <div id="status-banner" class="status-pill status-offline" role="status">Offline</div>
-            <nav class="top-actions">
-                <a class="btn ghost" href="../menu/">Zurück zur Arcade</a>
-            </nav>
+            <a class="brand" href="/">CHESS.KO</a>
+            <div id="status-banner" class="status-pill status-ready" role="status">Bereit</div>
         </header>
 
         <main class="chess-grid" aria-label="Schachoberfläche">
@@ -154,6 +151,32 @@
         <div class="loading-dialog" role="alert" aria-live="assertive">
             <div class="spinner"></div>
             <span>Bitte warten …</span>
+        </div>
+    </div>
+
+    <div id="promotion-overlay" class="promotion-overlay" hidden>
+        <div class="promotion-dialog" role="dialog" aria-modal="true" aria-labelledby="promotion-title">
+            <h2 id="promotion-title">Umwandlung</h2>
+            <p class="promotion-subtitle">Wähle eine Figur für deinen Bauern.</p>
+            <div class="promotion-choices" role="list">
+                <button type="button" class="promotion-choice" data-piece="queen">
+                    <img alt="" />
+                    <span>Dame</span>
+                </button>
+                <button type="button" class="promotion-choice" data-piece="rook">
+                    <img alt="" />
+                    <span>Turm</span>
+                </button>
+                <button type="button" class="promotion-choice" data-piece="bishop">
+                    <img alt="" />
+                    <span>Läufer</span>
+                </button>
+                <button type="button" class="promotion-choice" data-piece="knight">
+                    <img alt="" />
+                    <span>Springer</span>
+                </button>
+            </div>
+            <button type="button" id="promotion-cancel" class="btn ghost small">Abbrechen</button>
         </div>
     </div>
 

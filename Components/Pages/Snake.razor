@@ -1,0 +1,457 @@
+@page "/snake"
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+<PageTitle>Snake</PageTitle>
+
+<div class="snake-screen">
+    <section class="snake-play">
+        <header class="snake-top">
+            <div class="status-pill" data-state="@StatusState">@StatusText</div>
+            <div class="controls">
+                <button class="control" @onclick="StartOrResume" disabled="@(!_gameOver && _isRunning && !_isPaused)">Start</button>
+                <button class="control" @onclick="TogglePause" disabled="@(!_isRunning || _gameOver)">@(_isPaused ? "Fortsetzen" : "Pause")</button>
+                <button class="control" @onclick="Restart">Neu starten</button>
+            </div>
+        </header>
+
+        <div class="board-wrapper" tabindex="0" @onkeydown="HandleKey" @onkeydown:preventDefault="true" @ref="_focusTarget">
+            <div class="board-grid">
+                @for (var row = 0; row < Rows; row++)
+                {
+                    for (var col = 0; col < Columns; col++)
+                    {
+                        var cellClass = GetCellClass(row, col);
+                        <div class="@cellClass"></div>
+                    }
+                }
+            </div>
+
+            @if (_gameOver)
+            {
+                <div class="overlay">
+                    <h2>Game Over</h2>
+                    <p>Punkte: @_score</p>
+                    <p>Drücke Enter für einen neuen Versuch.</p>
+                </div>
+            }
+            else if (_isPaused)
+            {
+                <div class="overlay muted">
+                    <h2>Pausiert</h2>
+                    <p>Drücke Leertaste zum Fortsetzen.</p>
+                </div>
+            }
+        </div>
+    </section>
+
+    <aside class="snake-meta">
+        <section class="stat-card">
+            <header>Punkte</header>
+            <strong>@_score</strong>
+        </section>
+        <section class="stat-card">
+            <header>Level</header>
+            <strong>@_level</strong>
+        </section>
+        <section class="stat-card">
+            <header>Länge</header>
+            <strong>@_snake.Count</strong>
+        </section>
+        <section class="stat-card">
+            <header>Tempo</header>
+            <strong>@($"{GetCellsPerSecond():0.0} Felder/s")</strong>
+        </section>
+
+        <section class="help-card">
+            <h3>Steuerung</h3>
+            <ul>
+                <li><span>Pfeiltasten / WASD</span><span>Richtung ändern</span></li>
+                <li><span>Leertaste</span><span>Pause umschalten</span></li>
+                <li><span>Enter</span><span>Starten oder neustarten</span></li>
+            </ul>
+        </section>
+    </aside>
+</div>
+
+@code {
+    private const int Rows = 20;
+    private const int Columns = 20;
+    private const int InitialLength = 4;
+    private const int ApplesPerLevel = 5;
+
+    private readonly LinkedList<GridPoint> _snake = new();
+    private readonly HashSet<GridPoint> _snakeSet = new();
+    private readonly Random _rng = new();
+
+    private GridPoint _food;
+    private Direction _direction = Direction.Right;
+    private Direction? _queuedDirection;
+    private System.Timers.Timer? _loopTimer;
+    private ElementReference _focusTarget;
+
+    private int _score;
+    private int _level = 1;
+    private int _applesEaten;
+    private bool _isRunning;
+    private bool _isPaused;
+    private bool _gameOver;
+    private bool _shouldFocus;
+
+    private enum Direction
+    {
+        Up,
+        Down,
+        Left,
+        Right
+    }
+
+    private readonly record struct GridPoint(int Row, int Col);
+
+    protected override void OnInitialized()
+    {
+        ResetState();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender || _shouldFocus)
+        {
+            _shouldFocus = false;
+            await _focusTarget.FocusAsync();
+        }
+    }
+
+    private string StatusText => _gameOver
+        ? "Game Over"
+        : !_isRunning
+            ? "Bereit"
+            : _isPaused
+                ? "Pausiert"
+                : "Läuft";
+
+    private string StatusState => _gameOver
+        ? "danger"
+        : !_isRunning
+            ? "idle"
+            : _isPaused
+                ? "warning"
+                : "success";
+
+    private void StartOrResume()
+    {
+        if (_gameOver)
+        {
+            ResetState();
+            StateHasChanged();
+        }
+
+        if (_isRunning && !_isPaused)
+        {
+            return;
+        }
+
+        _isRunning = true;
+        _isPaused = false;
+        EnsureTimer();
+        _loopTimer?.Start();
+        _shouldFocus = true;
+    }
+
+    private void TogglePause()
+    {
+        if (!_isRunning || _gameOver)
+        {
+            return;
+        }
+
+        _isPaused = !_isPaused;
+        if (_isPaused)
+        {
+            _loopTimer?.Stop();
+        }
+        else
+        {
+            EnsureTimer();
+            _loopTimer?.Start();
+        }
+    }
+
+    private void Restart()
+    {
+        ResetState();
+        StateHasChanged();
+    }
+
+    private void HandleKey(KeyboardEventArgs args)
+    {
+        switch (args.Key)
+        {
+            case "ArrowUp":
+            case "w":
+            case "W":
+                QueueDirection(Direction.Up);
+                break;
+            case "ArrowDown":
+            case "s":
+            case "S":
+                QueueDirection(Direction.Down);
+                break;
+            case "ArrowLeft":
+            case "a":
+            case "A":
+                QueueDirection(Direction.Left);
+                break;
+            case "ArrowRight":
+            case "d":
+            case "D":
+                QueueDirection(Direction.Right);
+                break;
+            case " ":
+            case "Spacebar":
+                TogglePause();
+                break;
+            case "Enter":
+                if (_gameOver)
+                {
+                    Restart();
+                }
+                else
+                {
+                    StartOrResume();
+                }
+                break;
+            case "Escape":
+                if (_isRunning && !_gameOver && !_isPaused)
+                {
+                    TogglePause();
+                }
+                break;
+        }
+    }
+
+    private void QueueDirection(Direction direction)
+    {
+        if (_gameOver)
+        {
+            ResetState();
+            StateHasChanged();
+        }
+
+        if (!_isRunning)
+        {
+            _isRunning = true;
+            _isPaused = false;
+            EnsureTimer();
+            _loopTimer?.Start();
+        }
+
+        var current = _queuedDirection ?? _direction;
+        if (IsOpposite(current, direction))
+        {
+            return;
+        }
+
+        _queuedDirection = direction;
+    }
+
+    private static bool IsOpposite(Direction current, Direction next) =>
+        (current, next) switch
+        {
+            (Direction.Up, Direction.Down) => true,
+            (Direction.Down, Direction.Up) => true,
+            (Direction.Left, Direction.Right) => true,
+            (Direction.Right, Direction.Left) => true,
+            _ => false
+        };
+
+    private void Step()
+    {
+        if (!_isRunning || _isPaused || _gameOver)
+        {
+            _loopTimer?.Stop();
+            return;
+        }
+
+        if (_queuedDirection.HasValue)
+        {
+            _direction = _queuedDirection.Value;
+            _queuedDirection = null;
+        }
+
+        var head = _snake.First!.Value;
+        var next = _direction switch
+        {
+            Direction.Up => head with { Row = head.Row - 1 },
+            Direction.Down => head with { Row = head.Row + 1 },
+            Direction.Left => head with { Col = head.Col - 1 },
+            Direction.Right => head with { Col = head.Col + 1 },
+            _ => head
+        };
+
+        if (next.Row < 0 || next.Row >= Rows || next.Col < 0 || next.Col >= Columns)
+        {
+            TriggerGameOver();
+            return;
+        }
+
+        var willGrow = next.Equals(_food);
+        var tail = _snake.Last!.Value;
+
+        if (_snakeSet.Contains(next) && (willGrow || !next.Equals(tail)))
+        {
+            TriggerGameOver();
+            return;
+        }
+
+        _snake.AddFirst(next);
+        _snakeSet.Add(next);
+
+        if (willGrow)
+        {
+            _applesEaten++;
+            _score += 10 * _level;
+            if (_applesEaten % ApplesPerLevel == 0)
+            {
+                _level++;
+                EnsureTimer();
+            }
+
+            SpawnFood();
+        }
+        else
+        {
+            _snake.RemoveLast();
+            _snakeSet.Remove(tail);
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void TriggerGameOver()
+    {
+        _gameOver = true;
+        _isRunning = false;
+        _loopTimer?.Stop();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ResetState()
+    {
+        StopTimer();
+        _snake.Clear();
+        _snakeSet.Clear();
+
+        var centerRow = Rows / 2;
+        var startCol = Columns / 2 - (InitialLength / 2);
+
+        for (var i = 0; i < InitialLength; i++)
+        {
+            var point = new GridPoint(centerRow, startCol - i);
+            _snake.AddLast(point);
+            _snakeSet.Add(point);
+        }
+
+        _direction = Direction.Right;
+        _queuedDirection = null;
+        _food = default;
+        _score = 0;
+        _level = 1;
+        _applesEaten = 0;
+        _isRunning = false;
+        _isPaused = false;
+        _gameOver = false;
+        _shouldFocus = true;
+
+        SpawnFood();
+    }
+
+    private void SpawnFood()
+    {
+        GridPoint candidate;
+        do
+        {
+            candidate = new GridPoint(_rng.Next(Rows), _rng.Next(Columns));
+        } while (_snakeSet.Contains(candidate));
+
+        _food = candidate;
+    }
+
+    private void EnsureTimer()
+    {
+        var interval = GetIntervalMilliseconds();
+
+        if (_loopTimer is null)
+        {
+            _loopTimer = new System.Timers.Timer(interval)
+            {
+                AutoReset = true,
+            };
+            _loopTimer.Elapsed += OnLoopTick;
+        }
+        else
+        {
+            _loopTimer.Interval = interval;
+        }
+    }
+
+    private void OnLoopTick(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        InvokeAsync(Step);
+    }
+
+    private void StopTimer()
+    {
+        if (_loopTimer is null)
+        {
+            return;
+        }
+
+        _loopTimer.Stop();
+        _loopTimer.Elapsed -= OnLoopTick;
+        _loopTimer.Dispose();
+        _loopTimer = null;
+    }
+
+    private double GetIntervalMilliseconds()
+    {
+        var ms = 240 - (_level - 1) * 18;
+        return Math.Clamp(ms, 70, 240);
+    }
+
+    private double GetCellsPerSecond()
+        => 1000d / GetIntervalMilliseconds();
+
+    private string GetCellClass(int row, int col)
+    {
+        var cell = new GridPoint(row, col);
+        if (_snake.First is not null && _snake.First.Value.Equals(cell))
+        {
+            return "cell snake head";
+        }
+
+        if (_snakeSet.Contains(cell))
+        {
+            return "cell snake";
+        }
+
+        if (_food.Equals(cell))
+        {
+            return "cell food";
+        }
+
+        return "cell";
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        if (_loopTimer is not null)
+        {
+            _loopTimer.Stop();
+            _loopTimer.Elapsed -= OnLoopTick;
+            _loopTimer.Dispose();
+        }
+
+        return ValueTask.CompletedTask;
+    }
+}

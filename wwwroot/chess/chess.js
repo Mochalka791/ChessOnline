@@ -1333,11 +1333,17 @@ async function onCellClick(x, y) {
         return;
     }
 
-    const code = boardMatrix[x]?.[y] ?? '.';
-    if (selected && selected.x === x && selected.y === y) {
-        clearSelection();
-        return;
-    }
+    const img = document.createElement("img");
+    const src = `${PIECES_DIR}/${enc(filename)}`; // -> /chess/pieces/<Name>.svg
+    img.src = src;
+    img.alt = alt || filename;
+    img.style.width = "86%";
+    img.style.height = "86%";
+    img.style.objectFit = "contain";
+    img.style.margin = "7% auto";
+    img.style.gridColumn = String(col);
+    img.style.gridRow = String(row);
+    img.style.pointerEvents = "none";
 
     if (selected) {
         const target = legalMoves.find(m => m.tx === x && m.ty === y);
@@ -1386,109 +1392,42 @@ async function requestLegalMoves(x, y) {
     }
 }
 
-function fenToMatrix(fen) {
-    const parts = fen.split(' ');
-    if (parts.length < 2) return { board: boardMatrix, turn: 'white' };
-    const rows = parts[0].split('/');
-    const turn = parts[1] === 'b' ? 'black' : 'white';
-    const matrix = Array.from({ length: 8 }, () => Array(8).fill('.'));
-    for (let y = 0; y < 8; y++) {
-        const row = rows[y] ?? '';
-        let x = 0;
-        for (const char of row) {
-            if (/[0-9]/.test(char)) {
-                x += parseInt(char, 10);
-                continue;
-            }
-            const isWhite = char === char.toUpperCase();
-            const lower = char.toLowerCase();
-            const type = lower === 'p' ? 'pawn'
-                : lower === 'n' ? 'knight'
-                : lower === 'b' ? 'bishop'
-                : lower === 'r' ? 'rook'
-                : lower === 'q' ? 'queen'
-                : 'king';
-            if (x < 8) matrix[x][y] = `${isWhite ? 'w' : 'b'}_${type}`;
-            x++;
-        }
-    }
-    return { board: matrix, turn };
+function clearPieces() {
+    if (piecesLayer) piecesLayer.innerHTML = "";
 }
 
-function renderBoard(matrix, options = {}) {
-    if (!boardCells.length) return;
-    const lastMove = options.lastMove;
-    const inCheck = options.check;
-    const previewMode = options.preview ?? false;
+// 4) Board-Resize: maximal groß ohne Scrollen
+function resizeBoard() {
+    const pageH = window.innerHeight - 56;           // abzüglich Header
+    const pageW = Math.min(document.body.clientWidth, 1600);
 
-    for (let y = 0; y < 8; y++) {
-        for (let x = 0; x < 8; x++) {
-            const idx = y * 8 + x;
-            const cell = boardCells[idx];
-            const img = cell.querySelector('.piece');
-            const code = matrix[x]?.[y] ?? '.';
-            if (img.dataset.piece !== code) {
-                const src = pieceSrc(code);
-                if (src) {
-                    img.src = src;
-                    img.style.display = 'block';
-                    img.dataset.piece = code;
-                    img.alt = describePiece(code);
-                    img.draggable = true;
-                } else {
-                    img.removeAttribute('src');
-                    img.dataset.piece = '';
-                    img.style.display = 'none';
-                    img.alt = '';
-                    img.draggable = false;
-                }
-            }
+    // Spaltenbreiten: links 320, rechts 360, Gaps 16*2 = 32, Page-Padding 16*2 = 32
+    const leftW = 320, rightW = 360, gaps = 32, padding = 32;
+    let centerW = pageW - (leftW + rightW + gaps + padding);
+    if (centerW < 540) centerW = 540;
 
-            cell.classList.toggle('last-from', !!lastMove && lastMove.fx === x && lastMove.fy === y);
-            cell.classList.toggle('last-to', !!lastMove && lastMove.tx === x && lastMove.ty === y);
-            cell.classList.toggle('check', (!!inCheck?.white && inCheck.white.x === x && inCheck.white.y === y) || (!!inCheck?.black && inCheck.black.x === x && inCheck.black.y === y));
-        }
-    }
+    // Vertikal: 2 kompakte Playerzeilen + etwas Puffer → ~120px
+    const reservedV = 120;
+    const maxBoardH = pageH - (reservedV + padding);
 
-    boardMatrix = matrix;
+    const boardSize = Math.floor(Math.min(centerW - 16, maxBoardH - 16));
+    const clamped = Math.max(480, Math.min(1000, boardSize)); // 480..1000 px
 
-    if (boardBadge) {
-        if (boardBadge.dataset.locked === 'true') {
-            // keep current message (z.B. Schachmatt)
-        } else if (previewMode) {
-            boardBadge.hidden = true;
-        } else if (state?.check?.white || state?.check?.black) {
-            boardBadge.hidden = false;
-            const side = state.check.white ? 'Weiß' : 'Schwarz';
-            boardBadge.textContent = `${side} steht im Schach!`;
-        } else {
-            boardBadge.hidden = true;
-        }
+    const shell = document.getElementById("boardShell");
+    if (shell) {
+        shell.style.width = clamped + "px";
+        shell.style.height = clamped + "px";
     }
 }
 
-function renderLiveBoard() {
-    if (!state) return;
-    renderBoard(state.board, { lastMove: state.lastMove, check: extractCheckSquares(state.check), preview: false });
-    updateTurnLabel(state.turn);
-    drawMoveHints([]);
-    clearSelection();
-    movesEl?.querySelectorAll('li').forEach(node => node.classList.remove('active'));
-}
-
-function extractCheckSquares(check) {
-    if (!check) return null;
-    const res = { white: null, black: null };
-    if (check.white) res.white = { x: check.wKing.x, y: check.wKing.y };
-    if (check.black) res.black = { x: check.bKing.x, y: check.bKing.y };
-    return res;
-}
-
-function updateTurnLabel(turn) {
-    if (!turnEl) return;
-    const label = turn === 'white' ? 'Weiß' : 'Schwarz';
-    turnEl.textContent = `Am Zug: ${label}`;
-    turnEl.dataset.side = turn;
+// 5) Zugliste & Buttons
+function addMove(text) {
+    const ol = document.getElementById("moves");
+    if (!ol) return;
+    const li = document.createElement("li");
+    li.textContent = text;
+    ol.appendChild(li);
+    ol.parentElement?.scrollTo({ top: ol.parentElement.scrollHeight });
 }
 
 function renderPlayers(players) {
@@ -1683,7 +1622,10 @@ async function joinGame(vsBot) {
     }
 }
 
-async function copyText(getter, label) {
+// 7) Optional: SignalR (niemals blockierend)
+let connection = null;
+async function startSignalR() {
+    if (!window.signalR || !window.signalR.HubConnectionBuilder) return;
     try {
         const text = await getter();
         await navigator.clipboard.writeText(text);
@@ -1722,22 +1664,10 @@ async function runLocalAnalysis() {
     const loadingCard = showAnalysisLoading(depth);
 
     try {
-        const res = await fetch(`/api/local/analyze?roomId=${encodeURIComponent(roomId)}&depth=${depth}`, { signal: controller.signal });
-        const payload = await res.json().catch(() => null);
-        if (controller.signal.aborted) return;
-        if (res.ok && payload?.ok) {
-            pushAnalysisResult({ ok: true, summary: payload.summary, depth: payload.depth ?? depth });
-        } else {
-            const message = payload?.error ?? `HTTP ${res.status}`;
-            pushAnalysisResult({ ok: false, error: message, depth });
-            showToast(`Analyse fehlgeschlagen: ${message}`, 'error');
-        }
-    } catch (err) {
-        if (!controller.signal.aborted) {
-            const message = err instanceof Error ? err.message : String(err);
-            pushAnalysisResult({ ok: false, error: message, depth });
-            showToast(`Analyse fehlgeschlagen: ${message}`, 'error');
-        }
+        const res = await fetch(`/api/local/analyze?roomId=${encodeURIComponent(roomId)}&depth=14`, { signal: ctrl.signal });
+        return await res.json().catch(() => ({}));
+    } catch {
+        return { ok: false };
     } finally {
         if (loadingCard?.parentElement) loadingCard.remove();
         if (analysisController === controller) analysisController = null;
